@@ -4,7 +4,7 @@
 
 | ID | Артефакт и цель | Инструмент / модель | Тип промпта | Запрос или ссылка на него | Результат или ссылка | Что приняли | Что отклонили или исправили | Как проверили |
 |---|---|---|---|---|---|---|---|---|
-| P1-01 | Baseline-ревью `TRAINING_PR.diff` |  | zero-shot |  |  |  |  |  |
+| P1-01 | Baseline-ревью `TRAINING_PR.diff` | openai/gpt-5 | zero-shot | practices/practice_01/TRAINING_PR.diff — «Найти проблемы в PR» | См. раздел P1-01 Findings ниже | — | — | Сопоставлены выводы со строками диффа (app/api.py +35–38; app/review_service.py +19–22 и др.) |
 | P1-02 | Повторное ревью с master prompt |  | master prompt |  |  |  |  |  |
 | P1-03 |  |  |  |  |  |  |  |  |
 
