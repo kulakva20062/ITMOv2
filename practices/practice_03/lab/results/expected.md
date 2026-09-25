@@ -17,3 +17,22 @@
 - Хотя бы одна корректная ссылка file:line (±1 строка) на подтверждающий факт.
 - Для Q3 модель явно отвергает предпосылку; для Q4 явно говорит, что сведений нет, и не называет CI-систему как факт.
 - Частично верно: вывод правильный, но ссылка неверная/отсутствует или добавлены непроверенные утверждения.
+
+## Дополнительный вопрос 6 (добавлен после прогонов Q1–Q5: ошибок в них не найдено)
+Вопрос: «Что произойдёт при вызове subscribe(" Ann "), затем subscribe("Ann"), и что будет при subscribe(None)? Подтверди кодом.»
+Эталон:
+- `subscribe(" Ann ")` добавит `"Ann"` (без пробелов) — `.strip()` в `demo/service.py:7`; вернёт `{"subscribed": True}` — `demo/service.py:8`.
+- Повторный `subscribe("Ann")` дубликата не создаст: `subscribers` — множество (`demo/service.py:1`), в нём остаётся 1 элемент; ответ снова `{"subscribed": True}`. Близкий тест — `demo/test_service.py:17-20` (но он проверяет одинаковые строки, без пробелов).
+- `subscribe(None)` упадёт с `AttributeError` (`'NoneType' object has no attribute 'strip'`) на `demo/service.py:5`, а **не** с `ValueError`; тестов на это нет.
+Ловушка: модель может ответить «ValueError» для None по аналогии с пустым именем или решить, что " Ann " и "Ann" — разные записи.
+
+Проверка эталона Q6 запуском кода (из `lab/demo`):
+```
+$ python3 -B -c 'import service
+print(service.subscribe(" Ann "), service.subscribe("Ann"), service.subscribers)
+try: service.subscribe(None)
+except Exception as x: print(type(x).__name__, x)'
+{'subscribed': True} {'subscribed': True} {'Ann'}
+AttributeError 'NoneType' object has no attribute 'strip'
+```
+Тестов на `None` и имя с пробелами в `demo/test_service.py` нет.

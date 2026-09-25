@@ -1,3 +1,0 @@
-$ ollama run itmo-agent --think=false "Ответь: READY"
-READY
-(wall 13.02 s, включая загрузку модели с num_ctx 65536)

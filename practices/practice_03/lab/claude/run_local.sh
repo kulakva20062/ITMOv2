@@ -12,6 +12,9 @@ cd "$LAB/demo"
 # 127.0.0.1, not localhost: ::1 is not served by Ollama here and hangs until TCP timeout.
 # API key auth disables claude.ai login/connectors; auto-memory and CLAUDE.md are disabled so
 # the tested model gets only the system prompt, the question and tool results.
+# Replacing the built-in prompt also drops the working directory, and Read needs an absolute
+# path: without the appended note the model guessed paths like /home/user/repo/README.md.
+# The note is identical for A and B, so only the prompt file differs between them.
 env -u ANTHROPIC_AUTH_TOKEN \
   ANTHROPIC_BASE_URL="${OLLAMA_URL:-http://127.0.0.1:11434}" ANTHROPIC_API_KEY=ollama \
   ANTHROPIC_DEFAULT_HAIKU_MODEL=itmo-agent ANTHROPIC_DEFAULT_SONNET_MODEL=itmo-agent \
@@ -20,6 +23,7 @@ env -u ANTHROPIC_AUTH_TOKEN \
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_TELEMETRY=1 \
   claude -p --model itmo-agent --output-format stream-json --verbose \
     --system-prompt-file "$PROMPT" \
+    --append-system-prompt "Рабочий каталог репозитория: $PWD. Инструментам Read, Glob и Grep передавай абсолютные пути внутри этого каталога." \
     --tools "Read,Glob,Grep" --allowedTools "Read,Glob,Grep" \
     --setting-sources "" --strict-mcp-config --disable-slash-commands \
     --no-session-persistence --max-turns 8 \

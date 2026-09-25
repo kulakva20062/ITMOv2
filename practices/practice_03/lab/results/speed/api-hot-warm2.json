@@ -14,7 +14,7 @@
     "stream": false,
     "think": false,
     "options": {
-      "temperature": 0.2,
+      "temperature": 0.8,
       "seed": 42,
       "num_ctx": 4096,
       "num_predict": 512
@@ -22,23 +22,23 @@
   },
   "response": {
     "model": "qwen3.8:27b",
-    "created_at": "2026-09-25T07:55:28.409578399Z",
+    "created_at": "2026-09-25T10:26:17.251520102Z",
     "message": {
       "role": "assistant",
-      "content": "В предоставленных материалах нет ответа.\n\n**Основание:** В контексте указано только, что проверка выполняется командой `make test` и используются зависимости стандартной библиотеки Python 3.10+. Информация о конкретной CI-системе (например, GitHub Actions, GitLab CI) отсутствует."
+      "content": "В предоставленных материалах нет ответа.\n\n**Основание из контекста:** В тексте указано только, что «Проверка: make test», а также перечислены зависимости (стандартная библиотека Python 3.10+). Никаких упоминаний CI-систем (таких как GitHub Actions, GitLab CI и др.) в описании нет."
     },
     "done": true,
     "done_reason": "stop",
-    "total_duration": 15793509611,
-    "load_duration": 9223240,
+    "total_duration": 20191939654,
+    "load_duration": 1302677,
     "prompt_eval_count": 167,
-    "prompt_eval_cached_count": 0,
-    "prompt_eval_duration": 2207301000,
-    "eval_count": 62,
-    "eval_duration": 13378591000
+    "prompt_eval_cached_count": 163,
+    "prompt_eval_duration": 774828000,
+    "eval_count": 80,
+    "eval_duration": 19412824000
   },
-  "wall_seconds": 150.27732532699974,
-  "load_seconds": 0.00922324,
-  "total_seconds": 15.793509611,
-  "decode_tokens_per_second": 4.634269782221461
+  "wall_seconds": 20.21080782199897,
+  "load_seconds": 0.001302677,
+  "total_seconds": 20.191939654,
+  "decode_tokens_per_second": 4.120987240187208
 }
