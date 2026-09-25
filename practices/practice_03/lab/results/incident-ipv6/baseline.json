@@ -1,0 +1,40 @@
+{
+  "request": {
+    "model": "qwen3.8:27b",
+    "messages": [
+      {
+        "role": "user",
+        "content": "# Notify Mini\nУчебный сервис подписки. Подписчики хранятся в памяти процесса.\nВ service.py функция subscribe добавляет непустое имя в множество.\nПовторное добавление имени не создаёт дубликат.\n\nПроверка: make test.\nЗависимости: стандартная библиотека Python 3.10+.\n\n\nКакая CI-система запускает тесты проекта?"
+      }
+    ],
+    "stream": false,
+    "think": false,
+    "options": {
+      "temperature": 0.2,
+      "seed": 42,
+      "num_ctx": 4096,
+      "num_predict": 512
+    }
+  },
+  "response": {
+    "model": "qwen3.8:27b",
+    "created_at": "2026-09-25T07:52:58.060795581Z",
+    "message": {
+      "role": "assistant",
+      "content": "Судя по предоставленному описанию, в тексте **не указано**, какая именно CI-система запускает тесты проекта.\n\nВ описании сказано только:\n*   **Проверка:** `make test`\n*   **Зависимости:** стандартная библиотека Python 3.10+\n\nКоманда `make test` — это локальная команда сборки/тестирования, которая может быть запущена вручную разработчиком или любой CI-системой (GitHub Actions, GitLab CI, Jenkins, Travis CI и т.д.), но сама по себе она не определяет конкретную CI-платформу.\n\nЧтобы узнать, какая CI-система используется, нужно посмотреть на файлы конфигурации в корне репозитория, например:\n*   `.github/workflows/` — для **GitHub Actions**\n*   `.gitlab-ci.yml` — для **GitLab CI**\n*   `Jenkinsfile` — для **Jenkins**\n*   `.travis.yml` — для **Travis CI**\n\n**Вывод:** На основании данного текста ответить невозможно — информация отсутствует."
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 49756394005,
+    "load_duration": 1641781,
+    "prompt_eval_count": 100,
+    "prompt_eval_cached_count": 0,
+    "prompt_eval_duration": 1993251000,
+    "eval_count": 239,
+    "eval_duration": 47525218000
+  },
+  "wall_seconds": 183.74132630299937,
+  "load_seconds": 0.001641781,
+  "total_seconds": 49.756394005,
+  "decode_tokens_per_second": 5.028909073073583
+}

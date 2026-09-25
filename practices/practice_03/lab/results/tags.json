@@ -1,0 +1,54 @@
+{
+  "models": [
+    {
+      "name": "itmo-local:latest",
+      "model": "itmo-local:latest",
+      "modified_at": "2026-09-25T10:49:17.872998695+03:00",
+      "size": 17741872498,
+      "digest": "135e02412343b79a1efeb576cf2e92bdbbc058d0d2df9fe66261542beb77f5e1",
+      "details": {
+        "parent_model": "qwen3.8:27b",
+        "format": "gguf",
+        "family": "qwen35",
+        "families": [
+          "qwen35"
+        ],
+        "parameter_size": "27.3B",
+        "quantization_level": "Q4_K_M",
+        "context_length": 262144,
+        "embedding_length": 5120
+      },
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    {
+      "name": "qwen3.8:27b",
+      "model": "qwen3.8:27b",
+      "modified_at": "2026-09-25T10:47:48.080947801+03:00",
+      "size": 17741872154,
+      "digest": "aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813",
+      "details": {
+        "parent_model": "qwen3.8:27b-q4_K_M",
+        "format": "gguf",
+        "family": "qwen35",
+        "families": [
+          "qwen35"
+        ],
+        "parameter_size": "27.3B",
+        "quantization_level": "Q4_K_M",
+        "context_length": 262144,
+        "embedding_length": 5120
+      },
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    }
+  ]
+}
