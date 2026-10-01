@@ -1,6 +1,6 @@
 # Карточки моделей (сравнение разработчиков)
 
-Сняты 2026-09-25 со страниц каталога Ollama и из `ollama show`. «Не подтверждено» — карточка этого не обещает.
+Сняты 2026-09-25 со страниц каталога Ollama и из `ollama show`. «Не подтверждено» — карточка этого не обещает. Ключевые строки проверочных запросов для Gemma — в конце файла.
 
 ## Qwen3.8 27B — Alibaba Qwen (используется)
 - Источник: `ollama show qwen3.8:27b` ([model-info.txt](model-info.txt)), веса скачаны.
@@ -40,3 +40,20 @@
 - Для агентного этапа нужны tool calls. Gemma 3 их не поддерживает (проверено), поэтому годится только для чата без инструментов. Зато 4B быстрая: 82 tok/s целиком на GPU.
 - Gemma 4 31B поддерживает tools и распространяется под Apache 2.0, но на этом железе в 2.3 раза медленнее qwen3.8:27b (2.2 против ~5 tok/s): у неё больше параметров, и 81% модели работает на CPU.
 - Итог: qwen3.8:27b — лучший компромисс для агентного этапа. Gemma 4 31B — кандидат для A/B по фактору «модель», если скорость не важна (не проверялось).
+
+## Замеры Gemma (2026-09-25)
+`/api/chat`, think=false, num_ctx 4096, t=0.2, seed 42.
+
+Tool calling, запрос с инструментом `read` («Прочитай README.md»):
+```
+gemma3:4b  -> {"error":"registry.ollama.ai/library/gemma3:4b does not support tools","tool_calls":null,"content":""}
+gemma4:31b -> {"error":null,"tool_calls":[{"id":"call_bw5rnlfc","function":{"index":0,"name":"read","arguments":{"file_path":"README.md"}}}],"content":""}
+```
+
+Контрольный вопрос «Объясни разницу между моделью и сервером двумя предложениями» и `ollama ps` после ответа:
+```
+== gemma3:4b: total 11.1 s, load 10.3 s, 63 tok, 82.43 tok/s
+gemma3:4b    a2af6cc3eb7f    2.9 GB    100% GPU     4096       4 minutes from now
+== gemma4:31b: total 46 s, load 14.3 s, 62 tok, 2.21 tok/s
+gemma4:31b    6316f0629137    21 GB    81%/19% CPU/GPU    4096       4 minutes from now
+```

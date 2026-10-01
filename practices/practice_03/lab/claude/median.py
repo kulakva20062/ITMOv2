@@ -10,6 +10,8 @@ def claude_run(path):
     usage = result.get("usage", {})
     return {"duration_seconds": result["duration_ms"] / 1000,
             "api_seconds": result.get("duration_api_ms", 0) / 1000,
+            "ttft_seconds": result.get("ttft_ms", 0) / 1000,
+            "ttft_stream_seconds": result.get("ttft_stream_ms", 0) / 1000,
             "num_turns": result["num_turns"],
             "output_tokens": usage.get("output_tokens")}
 
@@ -23,8 +25,7 @@ def main():
     speed = Path(sys.argv[1] if len(sys.argv) > 1 else "results/speed")
     groups = {"claude_A_warm": sorted(speed.glob("A-warm*.jsonl")),
               "claude_B_warm": sorted(speed.glob("B-warm*.jsonl")),
-              "api_warm": sorted(speed.glob("api-warm*.json")),            # temperature 0.2
-              "api_hot_warm": sorted(speed.glob("api-hot-warm*.json"))}    # temperature 0.8
+              "api_warm": sorted(speed.glob("api-warm*.json"))}            # temperature 0.2
     summary = {"units": {"*_seconds": "s", "decode_tokens_per_second": "tok/s", "output_tokens": "tokens"}}
     for name, files in groups.items():
         runs = [(api_run if name.startswith("api") else claude_run)(f) for f in files]

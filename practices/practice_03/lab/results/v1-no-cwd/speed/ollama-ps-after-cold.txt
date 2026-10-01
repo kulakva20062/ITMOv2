@@ -1,2 +1,0 @@
-NAME                 ID              SIZE     PROCESSOR          CONTEXT    UNTIL              
-itmo-agent:latest    149e32a7e8f8    22 GB    84%/16% CPU/GPU    65536      4 minutes from now    

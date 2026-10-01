@@ -12,8 +12,8 @@ cd "$LAB/demo"
 # 127.0.0.1, not localhost: ::1 is not served by Ollama here and hangs until TCP timeout.
 # API key auth disables claude.ai login/connectors; auto-memory and CLAUDE.md are disabled so
 # the tested model gets only the system prompt, the question and tool results.
-# Replacing the built-in prompt also drops the working directory, and Read needs an absolute
-# path: without the appended note the model guessed paths like /home/user/repo/README.md.
+# Replacing the built-in prompt also drops the line that tells the model its working directory,
+# so the working directory is appended explicitly.
 # The note is identical for A and B, so only the prompt file differs between them.
 env -u ANTHROPIC_AUTH_TOKEN \
   ANTHROPIC_BASE_URL="${OLLAMA_URL:-http://127.0.0.1:11434}" ANTHROPIC_API_KEY=ollama \
