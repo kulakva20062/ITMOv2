@@ -68,6 +68,7 @@ python3 claude/median.py results/speed          # медианы → results/spe
 Файлы:
 - [`lab/Modelfile`](lab/Modelfile), [`lab/Modelfile.agent`](lab/Modelfile.agent): `FROM qwen3.5:4b` → `FROM qwen3.8:27b`.
 - [`lab/experiment.py`](lab/experiment.py): модель по умолчанию `qwen3.8:27b`; `localhost` → `127.0.0.1` (инцидент 2).
+- [`lab/demo/opencode.json`](lab/demo/opencode.json): `baseURL` `http://localhost:11434/v1` → `http://127.0.0.1:11434/v1` по той же причине (инцидент 2), иначе OpenCode на этой машине тоже ждал бы таймаута на `::1`. Правка сделана после всех прогонов; OpenCode не запускался, файл в экспериментах только читался моделью как файл каталога (ограничение 1).
 - [`lab/claude/run_local.sh`](lab/claude/run_local.sh) — замена `opencode run --agent local-guide`. Claude Code обращается к Anthropic-совместимому endpoint Ollama (`ANTHROPIC_BASE_URL=http://127.0.0.1:11434`, модель `itmo-agent`) и повторяет `local-guide` из [`demo/opencode.json`](lab/demo/opencode.json):
   - инструменты только `Read,Glob,Grep`, `--max-turns 8` вместо `steps: 8`;
   - встроенный system prompt Claude Code заменяется файлом промпта (`--system-prompt-file`). Вместе со встроенным промптом пропадает строка, в которой клиент сообщает модели рабочий каталог, поэтому одинаковая для A и B заметка о каталоге добавляется через `--append-system-prompt`;
@@ -120,7 +121,7 @@ PR со ссылками на материалы: создаёт студент,
 
 ## Эксперимент
 
-Проект: [`lab/demo`](lab/demo/) (сервис подписок, не менялся относительно `main`). HOMEWORK предлагает свой репозиторий из практик 1–2, но в нём только markdown-артефакты без кода: вопросы «подтверди кодом» и file:line на нём не проверить, поэтому по решению студента взят общий `lab/demo`, как в PRACTICE и README.
+Проект: [`lab/demo`](lab/demo/) (сервис подписок; код, тесты, README и промпт A не менялись относительно `main`, в `opencode.json` после прогонов изменён только `baseURL`). HOMEWORK предлагает свой репозиторий из практик 1–2, но в нём только markdown-артефакты без кода: вопросы «подтверди кодом» и file:line на нём не проверить, поэтому по решению студента взят общий `lab/demo`, как в PRACTICE и README.
 
 Фактор A/B: **system prompt.**
 - A = [`lab/demo/repo-system.txt`](lab/demo/repo-system.txt) (промпт практики).
@@ -130,7 +131,7 @@ PR со ссылками на материалы: создаёт студент,
 - модель `itmo-agent` (qwen3.8:27b Q4_K_M), `num_ctx` 65536, temperature 0.2 из Modelfile;
 - `max_tokens` 4096, thinking adaptive (одинаковое значение Claude Code по умолчанию);
 - инструменты Read/Glob/Grep, `--max-turns 8`, одинаковая заметка о рабочем каталоге;
-- вопросы дословно из [`QUESTIONS.md`](lab/QUESTIONS.md) и Q6 из [`run_ab.sh`](lab/claude/run_ab.sh), входные файлы `lab/demo/` не менялись;
+- вопросы дословно из [`QUESTIONS.md`](lab/QUESTIONS.md) и Q6 из [`run_ab.sh`](lab/claude/run_ab.sh), входные файлы `lab/demo/` во время прогонов не менялись;
 - новая сессия на каждый вопрос; в итоговой конфигурации каждый вопрос прогнан один раз, сначала все A, затем все B.
 
 Эталоны: [`results/expected.md`](lab/results/expected.md), тестируемой модели не передавались: она запускается в `lab/demo/`, и по логам ни один вызов инструмента не вышел за этот каталог (жёсткого ограничения путей в конфигурации нет). Эталоны Q1–Q5 закоммичены в `2823457`, ответы A/B — позже, в `ff1ee7d`. Эталон Q6 закоммичен вместе с ответами, поэтому то, что он составлен до ответов, коммитом не подтверждается; его правильность подтверждена запуском кода (вывод в `expected.md`). `make test` — 3 теста OK.
