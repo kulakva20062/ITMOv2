@@ -15,8 +15,8 @@
 `unittest`, `unittest.mock`, `urllib`, `json`, `argparse`. Без `requests`,
 `pytest` и других пакетов: на машине их нет, ставить их нельзя.
 
-Пример: импорты `experiment.py` — `argparse`, `json`, `sys`, `time`,
-`urllib.request`, `pathlib`. Сеть в тестах подменяется
+Пример: импорты `experiment.py` — `argparse`, `json`, `math`, `os`, `sys`, `time`,
+`urllib.error`, `urllib.request`, `pathlib`. Сеть в тестах подменяется
 `mock.patch("urllib.request.urlopen")` (`tests/test_experiment.py`, `setUp`).
 
 ## 3. Не добавлять framework ради маленькой правки
@@ -24,7 +24,7 @@
 Проверку аргументов делает простая функция, а не новая библиотека
 валидации, схема или слой классов.
 
-Пример: `validate_args(args, messages)` в `experiment.py` — четыре `if`
+Пример: `validate_args(args, messages)` в `experiment.py` — цепочка простых `if`
 и вызов `fail(...)`.
 
 ## 4. Не ослаблять `check.sh` ради зелёного результата

@@ -8,6 +8,7 @@
 Перед изменением кода прочитай `docs/style-guide.md`.
 
 - Контракт: `docs/requirements.md` (фичи A и B, коды выхода, сообщения).
+- Текущее состояние и следующий шаг: `docs/HANDOFF.md`.
 - Пример теста в стиле проекта: `demo/test_service.py` (`unittest`, без фреймворков).
 - Тесты `experiment.py`: `tests/test_experiment.py` (`unittest.mock.patch`
   на `urllib.request.urlopen`, реальная Ollama в тестах не нужна).

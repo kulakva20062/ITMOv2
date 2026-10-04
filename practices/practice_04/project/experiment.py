@@ -2,6 +2,7 @@
 import argparse
 import json
 import math
+import os
 import sys
 import time
 import urllib.error
@@ -36,6 +37,10 @@ def build_messages(root, mode):
 def validate_args(args, messages):
     if Path(args.output).exists():
         fail("файл результата уже существует: " + args.output)
+    if not Path(args.output).parent.is_dir():
+        fail("каталог для файла результата не существует: " + str(Path(args.output).parent))
+    if not os.access(Path(args.output).parent, os.W_OK):
+        fail("нет права записи в каталог файла результата: " + str(Path(args.output).parent))
     if not 0 <= args.temperature <= 2:
         fail(f"--temperature должна быть в диапазоне [0, 2], получено {args.temperature:g}")
     if not args.model.strip():
@@ -44,7 +49,7 @@ def validate_args(args, messages):
     if prompt_chars > MAX_PROMPT_CHARS:
         fail(f"промпт {prompt_chars} символов, максимум {MAX_PROMPT_CHARS}")
     if not math.isfinite(args.timeout) or args.timeout <= 0:
-        fail(f"--timeout должен быть больше 0, получено {args.timeout:g}")
+        fail(f"--timeout должен быть конечным числом больше 0, получено {args.timeout:g}")
 
 
 def error_text(exc):

@@ -101,6 +101,21 @@ class InputValidationTest(ExperimentCase):
         self.assertRejected(code, err, "уже существует")
         self.assertEqual(Path(self.output).read_text(encoding="utf-8"), "old")
 
+    def test_missing_output_directory_rejected_before_request(self):
+        output = os.path.join(self.tmp.name, "nodir", "out.json")
+        code, _, err = self.run_main(output=output)
+        self.assertRejected(code, err, "каталог для файла результата не существует")
+        self.assertFalse(Path(output).exists())
+
+    def test_unwritable_output_directory_rejected_before_request(self):
+        readonly = os.path.join(self.tmp.name, "ro")
+        os.mkdir(readonly, 0o500)
+        self.addCleanup(os.chmod, readonly, 0o700)
+        output = os.path.join(readonly, "out.json")
+        code, _, err = self.run_main(output=output)
+        self.assertRejected(code, err, "нет права записи в каталог")
+        self.assertFalse(Path(output).exists())
+
     def test_temperature_above_range_rejected(self):
         code, _, err = self.run_main("--temperature", "2.5")
         self.assertRejected(code, err, "--temperature")
@@ -151,7 +166,7 @@ class TimeoutArgumentTest(ExperimentCase):
         for value in ("0", "-5"):
             with self.subTest(value=value):
                 code, _, err = self.run_main("--timeout", value)
-                self.assertRejected(code, err, "--timeout должен быть больше 0, получено " + value)
+                self.assertRejected(code, err, "--timeout должен быть конечным числом больше 0, получено " + value)
                 self.assertFalse(Path(self.output).exists())
 
     def test_nan_timeout_rejected_before_request(self):
@@ -159,7 +174,7 @@ class TimeoutArgumentTest(ExperimentCase):
             with self.subTest(value=value):
                 output = os.path.join(self.tmp.name, f"nan-{value}.json")
                 code, _, err = self.run_main("--timeout", value, output=output)
-                self.assertRejected(code, err, "--timeout должен быть больше 0, получено nan")
+                self.assertRejected(code, err, "--timeout должен быть конечным числом больше 0, получено nan")
                 self.assertFalse(Path(output).exists())
 
     def test_infinite_timeout_rejected_before_request(self):
@@ -167,7 +182,7 @@ class TimeoutArgumentTest(ExperimentCase):
             with self.subTest(value=value):
                 output = os.path.join(self.tmp.name, f"inf-{value}.json")
                 code, _, err = self.run_main("--timeout", value, output=output)
-                self.assertRejected(code, err, "--timeout должен быть больше 0, получено inf")
+                self.assertRejected(code, err, "--timeout должен быть конечным числом больше 0, получено inf")
                 self.assertFalse(Path(output).exists())
 
     def test_existing_output_rejected_even_with_bad_timeout(self):
