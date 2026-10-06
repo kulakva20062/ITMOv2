@@ -2,6 +2,9 @@
   "$schema": "https://opencode.ai/config.json",
   "model": "ollama/itmo-agent",
   "small_model": "ollama/itmo-agent",
+  "enabled_providers": [
+    "ollama"
+  ],
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -15,6 +18,20 @@
           "limit": {
             "context": 65536,
             "output": 4096
+          }
+        },
+        "itmo-local": {
+          "name": "ITMO local 4k",
+          "limit": {
+            "context": 4096,
+            "output": 1024
+          }
+        },
+        "qwen3.8:27b": {
+          "name": "qwen3.8 27B (base)",
+          "limit": {
+            "context": 4096,
+            "output": 1024
           }
         }
       }
@@ -35,4 +52,3 @@
     }
   }
 }
-
