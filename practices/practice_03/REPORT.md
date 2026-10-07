@@ -1,13 +1,13 @@
 # Отчёт: локальные модели
 
-Отчёт ведёт рабочий агент по фактическим результатам команд и сообщениям студента в чате. По решению студента вместо OpenCode используется Claude Code (см. «Воспроизведение»). Сырые результаты — в [`lab/results/`](lab/results/). Факты, для которых вывод команды в репозитории не сохранён, помечены «(вывод не сохранён)».
+Отчёт ведёт рабочий агент по фактическим результатам команд и сообщениям студента в чате. Основные прогоны (A/B, скорость) сделаны через Claude Code по решению студента (см. «Воспроизведение»); после установки OpenCode вопросы Q1–Q5 повторно прогнаны через `opencode run --agent local-guide` (см. «Прогон через OpenCode»). Сырые результаты — в [`lab/results/`](lab/results/). Факты, для которых вывод команды в репозитории не сохранён, помечены «(вывод не сохранён)».
 
 ## Окружение
 
 ОС / CPU / GPU / RAM / VRAM / свободный диск: NixOS 26.05, Linux 6.18.52 / AMD Ryzen 5 5600 (6C/12T) / NVIDIA GeForce RTX 4060 Ti, driver 595.71.05 / 31 GiB (+34 GiB swap) / 8 GiB всего, 6.0 GiB свободно без модели (1.6 GiB занимает рабочий стол) / 388 GB — [`results/env.txt`](lab/results/env.txt)
 Ollama или LM Studio / OpenCode / Python, версии:
 - Ollama 0.34.2, системный сервис NixOS на `127.0.0.1:11434`;
-- OpenCode не установлен, вместо него Claude Code 2.1.223;
+- Claude Code 2.1.223 — основные прогоны; OpenCode 1.15.10 установлен позже, после A/B и замеров скорости, — повторный прогон Q1–Q5;
 - Python 3.13.15, curl 8.21.0, git 2.54.0;
 - make в системе нет, используется GNU Make 4.4.1 через `nix-shell -p gnumake`.
 
@@ -24,15 +24,15 @@ Ollama или LM Studio / OpenCode / Python, версии:
 | Разработчик / модель | Задача | Параметры / формат | Лицензия | Язык / tools | Источник |
 |---|---|---|---|---|---|
 | Alibaba Qwen / Qwen3.8 27B (`qwen3.8:27b`) | основная: API-эксперименты и A/B в агенте | 27.3B, GGUF Q4_K_M, 17 GB, контекст до 262144 | Apache 2.0 | русский: ответы корректны / tools, thinking, vision | `ollama show` ([`model-info.txt`](lab/results/model-info.txt)), скачана |
-| Alibaba Qwen / Qwen3.5 (`qwen3.5:4b`, тег шаблона практики) | запасная, не понадобилась | 0.8B–122B; 4b — 3.4 GB; контекст 256K | на странице каталога не указана | русский: не подтверждено / tools, thinking, vision | [ollama.com/library/qwen3.5](https://ollama.com/library/qwen3.5), не скачивалась |
+| Alibaba Qwen / Qwen3.5 (`qwen3.5:4b`, тег шаблона практики) | запасная, не понадобилась | 0.8B–122B; 4b — 3.4 GB; контекст 256K | на странице каталога не указана | русский: не подтверждено / tools, thinking, vision | [ollama.com/library/qwen3.5](https://ollama.com/library/qwen3.5); на момент экспериментов не скачивалась, `qwen3.5:4b` и `qwen3.5:9b` скачаны позже и в экспериментах не участвовали |
 | Google / Gemma 3 4B (`gemma3:4b`, `a2af6cc3eb7f`) | чат, QA, суммаризация на одной GPU | 4.3B, GGUF Q4_K_M, 3.3 GB, контекст 131072 | Gemma Terms of Use | русский: ответ корректный / **tools нет**: запрос с инструментом → `does not support tools` | `ollama show`, скачана — [`results/model-cards.md`](lab/results/model-cards.md) |
-| Google / Gemma 4 31B (`gemma4:31b`, `6316f0629137`) | универсальная, агентные сценарии | 31.3B, GGUF Q4_K_M, 19 GB, контекст 262144 | Apache 2.0 | русский: ответ корректный / tools (вернула вызов `read`), thinking, vision | `ollama show`, скачана — [`results/model-cards.md`](lab/results/model-cards.md) |
+| Google / Gemma 4 31B (`gemma4:31b`, `6316f0629137` на момент замеров; сейчас тег перекачан, ID `17ba34c06c80`) | универсальная, агентные сценарии | 31.3B, GGUF Q4_K_M, 19 GB, контекст 262144 | Apache 2.0 | русский: ответ корректный / tools (вернула вызов `read`), thinking, vision | `ollama show`, скачана — [`results/model-cards.md`](lab/results/model-cards.md) |
 
 Подробности — [`results/model-cards.md`](lab/results/model-cards.md). На контрольном вопросе (`num_ctx` 4096) `gemma3:4b` — 82 tok/s целиком на GPU, `gemma4:31b` — 2.2 tok/s при 81% на CPU, `qwen3.8:27b` — около 5 tok/s; строки замеров — в конце `model-cards.md`.
 
 ## Воспроизведение
 
-Команды и файлы конфигурации. Зависимости: Ollama, Claude Code CLI, Python 3.10+, `jq`, GNU coreutils (`realpath -m`), `ss` (iproute2). Команды выполняются из `practices/practice_03/lab/`:
+Команды и файлы конфигурации. Зависимости: Ollama, Claude Code CLI, OpenCode, Python 3.10+, `jq`, GNU coreutils (`realpath -m`), `ss` (iproute2). Команды выполняются из `practices/practice_03/lab/`:
 ```bash
 nix-shell -p gnumake --run "make install && make test"   # make в системе нет
 ollama pull qwen3.8:27b
@@ -43,7 +43,7 @@ ollama create itmo-agent -f Modelfile.agent   # FROM qwen3.8:27b, num_ctx 65536,
 ollama run qwen3.8:27b --think=false --nowordwrap "Объясни разницу между моделью и сервером двумя предложениями"
 ollama run itmo-local --think=false "Объясни разницу между моделью и сервером двумя предложениями"
 
-# API-эксперименты (PRACTICE)
+# API-эксперименты (experiment.py)
 python3 experiment.py --mode baseline --output results/baseline.json
 python3 experiment.py --mode system   --output results/system.json
 for s in 42 43 44; do python3 experiment.py --mode system --temperature 0.8 --seed $s --output results/hot$s.json; done
@@ -54,6 +54,9 @@ claude/run_local.sh demo/repo-system.txt "Прочитай README.md инстр�
 claude/run_ab.sh                               # Q1–Q5 из QUESTIONS.md + доп. Q6, A и B → results/ab/
 Q1="Как запустить тесты? Укажи файл-источник."
 claude/net_check.sh demo/repo-system.txt "$Q1" /tmp/net.jsonl results/network-check.txt
+
+# OpenCode: Q1–Q5, агент local-guide → results/opencode/
+i=1; grep -E '^[1-5]\. ' QUESTIONS.md | while IFS= read -r q; do opencode/run_opencode.sh "$q" results/opencode/q$i.jsonl; i=$((i+1)); done
 
 # скорость (в таком порядке и выполнялось: API — до A/B, агент — после)
 ollama stop qwen3.8:27b; ollama stop itmo-agent   # перед холодным стартом `ollama ps` пуст
@@ -68,7 +71,7 @@ python3 claude/median.py results/speed          # медианы → results/spe
 Файлы:
 - [`lab/Modelfile`](lab/Modelfile), [`lab/Modelfile.agent`](lab/Modelfile.agent): `FROM qwen3.5:4b` → `FROM qwen3.8:27b`.
 - [`lab/experiment.py`](lab/experiment.py): модель по умолчанию `qwen3.8:27b`; `localhost` → `127.0.0.1` (инцидент 2).
-- [`lab/demo/opencode.json`](lab/demo/opencode.json): `baseURL` `http://localhost:11434/v1` → `http://127.0.0.1:11434/v1` по той же причине (инцидент 2), иначе OpenCode на этой машине тоже ждал бы таймаута на `::1`. Правка сделана после всех прогонов; OpenCode не запускался, файл в экспериментах только читался моделью как файл каталога (ограничение 1).
+- [`lab/demo/opencode.json`](lab/demo/opencode.json): `baseURL` `http://localhost:11434/v1` → `http://127.0.0.1:11434/v1` по той же причине (инцидент 2), иначе OpenCode на этой машине тоже ждал бы таймаута на `::1`. Правка сделана после прогонов Claude Code; в них файл только читался моделью как файл каталога (ограничение 1). Позже, для прогона через OpenCode, в провайдер `ollama` добавлены все три модели практики (`itmo-agent`, `itmo-local`, `qwen3.8:27b`) и `"enabled_providers": ["ollama"]`, чтобы OpenCode не показывал модели других провайдеров.
 - [`lab/claude/run_local.sh`](lab/claude/run_local.sh) — замена `opencode run --agent local-guide`. Claude Code обращается к Anthropic-совместимому endpoint Ollama (`ANTHROPIC_BASE_URL=http://127.0.0.1:11434`, модель `itmo-agent`) и повторяет `local-guide` из [`demo/opencode.json`](lab/demo/opencode.json):
   - инструменты только `Read,Glob,Grep`, `--max-turns 8` вместо `steps: 8`;
   - встроенный system prompt Claude Code заменяется файлом промпта (`--system-prompt-file`). Вместе со встроенным промптом пропадает строка, в которой клиент сообщает модели рабочий каталог, поэтому одинаковая для A и B заметка о каталоге добавляется через `--append-system-prompt`;
@@ -76,6 +79,7 @@ python3 claude/median.py results/speed          # медианы → results/spe
   - без MCP, пользовательских и проектных настроек, CLAUDE.md и auto-memory, без облачной авторизации (API-ключ-заглушка);
   - из потока событий удаляются блоки рассуждений; остаются текст ответа, `tool_use`/`tool_result`, `init` и итог `result`.
 - [`lab/claude/repo-system-b.txt`](lab/claude/repo-system-b.txt) — system prompt B; A — [`lab/demo/repo-system.txt`](lab/demo/repo-system.txt).
+- [`lab/opencode/run_opencode.sh`](lab/opencode/run_opencode.sh) — `opencode run --agent local-guide -m ollama/itmo-agent --format json` из `lab/demo`, новая сессия на вопрос.
 - [`lab/claude/run_ab.sh`](lab/claude/run_ab.sh) — A/B; [`lab/claude/net_check.sh`](lab/claude/net_check.sh) — запуск с записью TCP-сокетов процесса; [`lab/claude/median.py`](lab/claude/median.py) — медианы.
 
 Подтверждение локального endpoint и скачанных весов:
@@ -121,7 +125,7 @@ PR со ссылками на материалы: создаёт студент,
 
 ## Эксперимент
 
-Проект: [`lab/demo`](lab/demo/) (сервис подписок; код, тесты, README и промпт A не менялись относительно `main`, в `opencode.json` после прогонов изменён только `baseURL`). HOMEWORK предлагает свой репозиторий из практик 1–2, но в нём только markdown-артефакты без кода: вопросы «подтверди кодом» и file:line на нём не проверить, поэтому по решению студента взят общий `lab/demo`, как в PRACTICE и README.
+Проект: [`lab/demo`](lab/demo/) (сервис подписок; код, тесты, README и промпт A не менялись относительно `main`, в `opencode.json` после прогонов Claude Code изменены `baseURL`, список моделей и `enabled_providers`). Домашняя работа в [`README.md`](README.md) — «локальный помощник по своему проекту», но в своём репозитории из практик 1–2 только markdown-артефакты без кода: вопросы «подтверди кодом» и file:line на нём не проверить, поэтому по решению студента взят общий `lab/demo` — тестовый сервис, который README.md даёт для проверки вопросов.
 
 Фактор A/B: **system prompt.**
 - A = [`lab/demo/repo-system.txt`](lab/demo/repo-system.txt) (промпт практики).
@@ -145,10 +149,26 @@ PR со ссылками на материалы: создаёт студент,
 | 5. Сохраняются ли подписки? | нет, `set()` в памяти; `service.py:1`, `README.md:2` | нет — service.py:1, service.py:7, README.md:2 — [A-q5](lab/results/ab/A-q5.jsonl) | нет — service.py:1, service.py:7, README.md:2 — [B-q5](lab/results/ab/B-q5.jsonl) | ✅ / ✅ | A: Glob, Read×4 (6, 133 с); B: Glob, Grep, Read×3 (6, 139 с) |
 | 6*. `subscribe(" Ann ")`, затем `subscribe("Ann")`, затем `subscribe(None)` | `"Ann"` без дубликата; `None` → `AttributeError` на `service.py:5`; тестов на это нет | всё верно, со ссылками на строки — [A-q6](lab/results/ab/A-q6.jsonl) | всё верно; «Чего нет в файлах: —», хотя тестов на `None` нет — [B-q6](lab/results/ab/B-q6.jsonl) | ✅ / ✅ | A: Grep, Glob, Read×2 (5, 253 с); B: Grep, Glob, Read×2 (5, 184 с) |
 
-\* Q6 — дополнительный сложный вопрос (HOMEWORK: «если модель не ошиблась на пяти вопросах»): на Q1–Q5 выводы обеих конфигураций верны, неверных фактов нет; B-q4 содержит одно непроверенное утверждение (◐).
+\* Q6 — дополнительный сложный вопрос сверх пяти, которые требует README.md, добавлен, потому что модель не ошиблась на пяти вопросах: на Q1–Q5 выводы обеих конфигураций верны, неверных фактов нет; B-q4 содержит одно непроверенное утверждение (◐).
 ◐ — частично верно по критерию `expected.md`: вывод правильный, но добавлено непроверенное утверждение. B-q4 утверждает «В репозитории нет CI-системы», хотя из файлов следует только, что сведений о CI нет (CI может быть настроена вне репозитория).
 Итог: A — 6/6, B — 5/6 + 1 частично (B-q4). Все пути в вызовах инструментов внутри `lab/demo`, ошибок инструментов нет. Ссылки file:line в ответах опираются на вывод Read или Grep в той же сессии; единственное расширение — A-q3 указывает диапазон `test_service.py:9-20`, хотя Grep показал только часть этих строк (файл целиком не читался).
 Медиана по 6 вопросам: A — 177.6 с и 738 выходных токенов, B — 134.2 с и 577 токенов. B короче, A даёт больше пояснений (`None` в Q2, «команды не запускал» в Q1, что есть вместо `unsubscribe` в Q3).
+
+## Прогон через OpenCode
+
+После A/B и замеров скорости установлен OpenCode 1.15.10, и Q1–Q5 из [`QUESTIONS.md`](lab/QUESTIONS.md) прогнаны через агента `local-guide` из [`demo/opencode.json`](lab/demo/opencode.json): модель `ollama/itmo-agent`, промпт A (`{file:./repo-system.txt}`), `steps: 8`, разрешены только `read`, `glob`, `grep`. Каждый вопрос — отдельный `opencode run` (новая сессия) из `lab/demo`, runner — [`lab/opencode/run_opencode.sh`](lab/opencode/run_opencode.sh), сырые события `--format json` — [`results/opencode/`](lab/results/opencode/).
+
+Особенность машины: системный конфиг NixOS `/etc/opencode/opencode.json` задаёт свою модель по умолчанию (`llama-cpp/…`) и перекрывает `"model"` проектного конфига, поэтому модель передаётся флагом `-m ollama/itmo-agent`. Чтобы в OpenCode были видны только модели практики, в проектный конфиг добавлены `itmo-local`, `qwen3.8:27b` и `"enabled_providers": ["ollama"]`; `opencode models` из `lab/demo` выводит ровно `ollama/itmo-agent`, `ollama/itmo-local`, `ollama/qwen3.8:27b`.
+
+| Вопрос | Ответ OpenCode (`local-guide`) | Верно | Инструменты, время сессии |
+|---|---|---|---|
+| 1. Как запустить тесты? | `make test` → `python3 -m unittest -v` — Makefile:1-3; альтернатива `python3 test_service.py` — test_service.py:23-24 — [q1](lab/results/opencode/q1.jsonl) | ✅ | read×3, glob×2; 113 с |
+| 2. Пустое имя? | `ValueError("empty name")`, имя не добавляется — service.py:4-6, test_service.py:13-15, README.md:3 — [q2](lab/results/opencode/q2.jsonl) | ✅ | read×4, glob; 147 с |
+| 3. Где unsubscribe? (ложная предпосылка) | «Предпосылка вопроса неверна», есть только `subscribe` — service.py:1, 4-8, test_service.py:2, README.md:3 — [q3](lab/results/opencode/q3.jsonl) | ✅ | начал с `grep unsubscribe` (0 совпадений), glob, read×3; 212 с |
+| 4. Какая CI? (нет ответа) | «нет сведений о конкретной CI-системе»; конфигов CI не найдено; README.md:6 — только `make test` — [q4](lab/results/opencode/q4.jsonl) | ✅ | glob×9, grep, read×2; 184 с |
+| 5. Сохраняются ли подписки? | нет — service.py:1, service.py:7, README.md:2 — [q5](lab/results/opencode/q5.jsonl) | ✅ | read×3, glob; 125 с |
+
+Итог OpenCode: 5/5, медиана времени сессии 147 с (по меткам времени событий), 179–309 выходных токенов на ответ. Все вызовы инструментов завершились успешно, пути — внутри `lab/demo`, все сессии закончились ответом (`reason: stop`), лимит `steps` не достигнут. Ограничение 1 воспроизвелось: в Q4 модель прочитала промпт `repo-system.txt` как файл проекта. В Q3 в ответ попала промежуточная фраза «Прочитаю исходные файлы…» перед итоговым текстом — OpenCode выводит текст всех шагов.
 
 ## Скорость
 
@@ -203,4 +223,4 @@ TTFT измерен или не измерен: **для агента измер
 - режим `think=false` в агенте (использован adaptive по умолчанию);
 - контекст больше 64k и проекты крупнее `lab/demo`;
 - qwen3.5, другие квантизации и A/B по фактору «модель» (например, `gemma4:31b`);
-- OpenCode (заменён Claude Code по решению студента).
+- в OpenCode — только Q1–Q5 с промптом A, по одному прогону; A/B и замеры скорости через OpenCode не повторялись.
