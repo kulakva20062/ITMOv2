@@ -145,8 +145,10 @@ GREEN: Ran 22 tests ... OK, затем make -C demo test — Ran 3 tests ... OK<
 <p>Стоп-точка 3, решения студента: исправить 1–3; добавить тест на URL <code>/api/chat</code>; ответы Ollama с валидным JSON, но не объектом, и проверки отказа соединения и HTTP 500 на живой Ollama не делать. Контракт уточнён с разрешения студента: «конечное число больше 0». Исправления сделала новая сессия <code>claude -p</code> по TDD. Debug-лог hook этой сессии:</p>
 <pre>"Hook PostToolUse:Edit (PostToolUse) error:\ncheck.sh: FAIL\n...      ×3  (новые тесты nan/inf падают)
 Hooks: Parsed initial response: {"hookSpecificOutput":{... "additionalContext":"check.sh: PASS"}}   (после исправления)</pre>
-<pre>$ python3 experiment.py --mode system --timeout nan --output t.json  → ошибка: --timeout должен быть больше 0, получено nan   rc=2
+<pre># вывод на момент коммита 986b979; текст сообщения позже уточнён во внутренней проверке (раунд 2)
+$ python3 experiment.py --mode system --timeout nan --output t.json  → ошибка: --timeout должен быть больше 0, получено nan   rc=2
 $ python3 experiment.py --mode system --timeout inf --output t.json  → ошибка: --timeout должен быть больше 0, получено inf   rc=2
+# текущая версия: ошибка: --timeout должен быть конечным числом больше 0, получено nan (inf)   rc=2
 $ python3 experiment.py --mode system --model nope:1b --output t.json → модель nope:1b не найдена — `ollama pull nope:1b`   rc=3
 Ran 25 tests ... OK</pre>
 
@@ -223,7 +225,7 @@ TOOL_USE mcp__ollama-info__ollama_model_info {"model": "nope:1b"}
   </li>
 </ul>
 <h2>Внутренняя проверка перед сдачей</h2>
-<p>Проверяющий агент — новый процесс <code>claude -p</code> из <code>/tmp/p4grade</code> (без памяти проекта и <code>CLAUDE.md</code>, доступ к репозиторию через <code>--add-dir</code>, только чтение и запуск проверок) — проверил работу по разделу 10 задания и составил список замечаний. Замечания исправлены, затем проверка повторена.</p>
+<p>Проверяющий агент — новый процесс <code>claude -p</code> из <code>/tmp/p4grade</code> (без памяти проекта и <code>CLAUDE.md</code>, доступ к репозиторию через <code>--add-dir</code>, только чтение и запуск проверок) — проверил работу по требованиям <a href="README.md">README.md</a> практики (разделы «Что подготовить для сдачи», «Что студент показывает ревьюверу» и «Оценка, 10 баллов») и составил список замечаний. Замечания исправлены, затем проверка повторена.</p>
 <table>
 <tr><th>Раунд</th><th>Замечания</th><th>Исправление</th></tr>
 <tr><td>1</td><td><code>--output</code> в несуществующий каталог → traceback после ответа модели; MCP падал на <code>arguments</code>, не являющемся объектом; выводы рефлексии от первого лица; этапы 5–6 без цитат; устаревшие номера строк и примеры style guide</td><td>Строка контракта, тест и проверка в <code>validate_args</code>; защита и JSON-RPC-ошибки в MCP; раздел выводов рефлексии переработан; цитаты добавлены; примечание о номерах строк; style guide обновлён</td></tr>
