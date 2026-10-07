@@ -39,7 +39,7 @@ ollama pull qwen3.8:27b
 ollama create itmo-local -f Modelfile         # FROM qwen3.8:27b, num_ctx 4096, SYSTEM
 ollama create itmo-agent -f Modelfile.agent   # FROM qwen3.8:27b, num_ctx 65536, без SYSTEM
 
-# первый запрос (PREPARATION) → results/first-run.txt
+# первый запрос → results/first-run.txt
 ollama run qwen3.8:27b --think=false --nowordwrap "Объясни разницу между моделью и сервером двумя предложениями"
 ollama run itmo-local --think=false "Объясни разницу между моделью и сервером двумя предложениями"
 
