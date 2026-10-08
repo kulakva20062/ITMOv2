@@ -1,0 +1,9 @@
+{
+  "name": "autodrive-landing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "sh scripts/check.sh",
+    "start": "python3 -m http.server 8000"
+  }
+}

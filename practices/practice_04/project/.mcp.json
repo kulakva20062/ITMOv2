@@ -1,16 +1,8 @@
 {
   "mcpServers": {
-    "context7": {
-      "type": "http",
-      "url": "https://mcp.context7.com/mcp"
-    },
-    "ollama-info": {
-      "type": "stdio",
-      "command": "python3",
-      "args": [
-        "mcp/ollama_info_server.py"
-      ],
-      "env": {}
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.83", "--headless", "--browser", "chromium", "--executable-path", "/run/current-system/sw/bin/chromium", "--output-dir", "/tmp/p4-playwright"]
     }
   }
 }
