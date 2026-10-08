@@ -1,3 +1,13 @@
 {
-  "enabledMcpjsonServers": ["playwright"]
+  "enabledMcpjsonServers": ["playwright"],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-after-edit.sh", "timeout": 60 }
+        ]
+      }
+    ]
+  }
 }
