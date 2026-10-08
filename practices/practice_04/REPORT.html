@@ -1,255 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>Практика 4 — отчёт (Кулаковский Влад)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Практика 4 — AutoDrive: среда агента, skill и свой MCP</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1d1d1f; }
-  h1 { font-size: 1.6rem; } h2 { border-bottom: 1px solid #ccc; padding-bottom: .2rem; margin-top: 2.2rem; } h3 { margin-top: 1.5rem; }
-  pre { background: #f5f5f7; padding: .7rem; overflow-x: auto; font-size: .85rem; border-radius: 4px; }
-  code { background: #f0f0f2; padding: 0 .2rem; border-radius: 3px; }
-  pre code { background: none; padding: 0; }
-  table { border-collapse: collapse; width: 100%; font-size: .92rem; } th, td { border: 1px solid #ccc; padding: .35rem .5rem; text-align: left; vertical-align: top; }
-  th { background: #f5f5f7; } .note { color: #555; font-size: .9rem; }
+  :root { --ink: #1B2A3A; --ink-2: #5A6871; --paper: #EDF0EE; --rule: #C3CAC7; --signal: #F0B323; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 system-ui, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; }
+  h2 { margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--rule); }
+  h3 { margin: 24px 0 8px; }
+  .muted { color: var(--ink-2); }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); }
+  th { color: var(--ink-2); font-weight: 600; font-size: 13px; }
+  code { font-size: 0.92em; background: #fff; padding: 1px 4px; }
+  pre { background: #fff; padding: 12px; overflow-x: auto; font-size: 13px; line-height: 1.45; border-left: 3px solid var(--signal); }
+  a { color: var(--ink); }
+  .ok { font-weight: 600; }
+  nav a { margin-right: 14px; }
+  figure { margin: 16px 0; }
+  figure img { max-width: 100%; border: 1px solid var(--rule); }
+  .shots { display: grid; grid-template-columns: 3fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 640px) { .shots { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<h1>Практика 4: две фичи с агентом (Claude Code)</h1>
-<p>Ветка <code>2026_Kulakovskii_Vlad_practies_4</code>. Проект: <a href="project/">practices/practice_04/project/</a>, скопирован из Практики 3 (<code>experiment.py</code>, <code>system.txt</code>, <code>demo/</code>, <code>Makefile</code>).
-Агент — Claude Code 2.1.223, подтверждения сделаны отдельными процессами <code>claude -p</code> с ограниченными <code>--allowedTools</code>. Локальная модель — <code>qwen3.8:27b</code> в Ollama 0.34.2.</p>
-<p>Коммиты: <code>a8a6682</code> «Практика 4: фича A и среда агента», <code>986b979</code> «Практика 4: фича B — ошибки Ollama и --timeout» (сделан в worktree <code>../ITMOv2-p4-b</code>, влит <code>git merge --ff-only practice-04-b</code>).</p>
-<p>Итоговая проверка: <code>make step4</code> из корня репозитория — 27 тестов <code>experiment.py</code> + 3 теста <code>demo/</code>, OK (тесты 26–27 добавлены после внутренней проверки, см. раздел в конце).</p>
-<p class="note">Номера строк в цитатах ответов агента — на момент соответствующего запуска. Позже файлы росли: в <code>AGENTS.md</code> добавились строки про style guide и HANDOFF, в <code>experiment.py</code> — импорты и проверки B. Текущие номера указаны в квадратных скобках прямо в цитатах.</p>
+<main>
+<h1>Практика 4: AutoDrive — две фичи с агентом</h1>
+<p class="muted">Лендинг проката автомобилей (вымышленный) повторяет демо с занятия: A — лендинг, B — калькулятор. Агент — Claude Code (<code>claude -p</code>, по сессии на шаг); я ставил задачи, принимал результат и делал commit.</p>
+<nav><a href="#env">А. Среда</a><a href="#skill">Б. Skill</a><a href="#mcp">В. Свой MCP</a><a href="#refl">Г. Рефлексия</a><a href="#flow">Ход работы</a></nav>
 
-<h2>А. Среда (AGENTS.md, skill, MCP, hook)</h2>
-
+<h2 id="env">А. Настроенная среда и зачем она</h2>
 <table>
-<tr><th>Подключение</th><th>Файлы</th><th>Какой шаг задачи улучшило</th></tr>
-<tr><td>AGENTS.md + CLAUDE.md</td><td><a href="project/AGENTS.md">AGENTS.md</a>, <a href="project/CLAUDE.md">CLAUDE.md</a> (<code>@AGENTS.md</code>), <a href="project/docs/requirements.md">docs/requirements.md</a>, <a href="project/docs/style-guide.md">docs/style-guide.md</a>, <a href="project/docs/HANDOFF.md">docs/HANDOFF.md</a></td><td>Каждая новая сессия (B в worktree, исправления, handoff) начинала с контракта и команды проверки, не нужно было повторять их в поручении. Ограничения, записанные в AGENTS.md (stdlib, не трогать контракт и <code>check.sh</code>), соблюдены: в репозитории сессия B изменила только <code>experiment.py</code> и тесты. Но вне репозитория она без поручения правила файл автопамяти Claude Code (<code>~/.claude/projects/.../memory/</code>). AGENTS.md запрещает трогать другие практики, а запись вне проекта не запрещал. Это нарушение границ, оно записано в рефлексии.</td></tr>
-<tr><td>Skill <code>test-driven-development</code></td><td><a href="project/.claude/skills/test-driven-development/SKILL.md">SKILL.md</a>, <a href="project/.claude/skills/test-driven-development/writing-good-tests.md">writing-good-tests.md</a>. Источник: <a href="https://github.com/obra/superpowers/tree/main/skills/test-driven-development">obra/superpowers</a>, коммит <code>8ca22dba9a94f28898bbce59f2537ff4d87c747d</code> (v6.4.2)</td><td>Фичи A и B и исправления после review сделаны через RED → GREEN: тесты писались до кода, падение показывалось.</td></tr>
-<tr><td>MCP Context7</td><td><a href="project/.mcp.json">.mcp.json</a> (http, <code>https://mcp.context7.com/mcp</code>), <a href="project/.claude/settings.local.json">.claude/settings.local.json</a> (<code>enabledMcpjsonServers</code>)</td><td>Формат ошибки Ollama и исключение таймаута <code>urlopen</code> взяты из документации, а не по памяти. Из них составлена таблица сообщений B в контракте.</td></tr>
-<tr><td>Hook PostToolUse <code>Edit|Write</code></td><td><a href="project/.claude/settings.json">.claude/settings.json</a> → <a href="project/.claude/hooks/check-after-edit.sh">.claude/hooks/check-after-edit.sh</a></td><td>Агент получает результат <code>check.sh</code> после каждой правки без отдельной команды. Сессия B увидела RED (<code>FAILED (failures=14)</code>) именно от hook.</td></tr>
-<tr><td>Субагент tester (бонус)</td><td><a href="project/.claude/agents/tester.md">.claude/agents/tester.md</a> (Read, Grep, Glob, Bash)</td><td>Review diff B нашёл два дефекта, которые тесты не ловили (<code>--timeout nan/inf</code>).</td></tr>
-<tr><td>Runner</td><td><a href="project/scripts/check.sh">scripts/check.sh</a>, <a href="Makefile">practices/practice_04/Makefile</a>, цель <code>step4</code> в корневом <code>Makefile</code></td><td>Одна команда проверки для агента, hook и <code>make step4</code>.</td></tr>
+<tr><th>Подключение</th><th>Файлы</th><th>Какой шаг улучшает</th><th>Подтверждение применения</th></tr>
+<tr><td>Правила</td><td><a href="project/AGENTS.md">AGENTS.md</a>, <a href="project/CLAUDE.md">CLAUDE.md</a> (<code>@AGENTS.md</code>), <a href="project/docs/requirements.md">requirements.md</a>, <a href="project/docs/style-guide.md">style-guide.md</a></td><td>Постановка задачи: стек, команда проверки, запреты и контракт A/B. Claude Code читает <code>CLAUDE.md</code>, поэтому правила подключены через импорт, а источник один — <code>AGENTS.md</code>.</td><td><a href="evidence/01-agents-md.md">01</a>: без подсказок назвал команду проверки, границы A и B (логика «Рассчитать» — это B), ограничения</td></tr>
+<tr><td>Skill (готовый)</td><td><a href="project/.claude/skills/frontend-design/SKILL.md">frontend-design</a> — Anthropic</td><td>Дизайн с нуля без дизайнера: токены, типографика, отказ от шаблонных решений.</td><td><a href="evidence/02-skill-frontend-design.md">02</a>: вызов <code>Skill frontend-design</code>, план «лист осмотра»; <a href="evidence/04-feature-a.md">04</a>: реализация по плану</td></tr>
+<tr><td>Skill (свой)</td><td><a href="project/.claude/skills/landing-check/SKILL.md">landing-check</a> + <a href="project/.claude/skills/landing-check/scripts/audit.mjs">audit.mjs</a></td><td>Приёмка: одна команда вместо ручного обхода критериев.</td><td><a href="evidence/09-skill-landing-check.md">09</a>, отчёт <a href="project/docs/landing-check-report.md">landing-check-report.md</a></td></tr>
+<tr><td>MCP playwright</td><td><a href="project/.mcp.json">.mcp.json</a> (системный Chromium — NixOS)</td><td>Агент видит отрисованную страницу: горизонтальный скролл, консоль, клики. Тесты по HTML этого не ловят.</td><td><a href="evidence/03-mcp-playwright.md">03</a>: листинг каталога и 404 на пустом проекте; в A агент нашёл по скриншоту рассинхрон колонок на 1280 px</td></tr>
+<tr><td>MCP contrast (свой)</td><td><a href="project/.claude/mcp/contrast_server.py">contrast_server.py</a></td><td>Доступность палитры: контраст токенов из <code>styles.css</code>.</td><td><a href="evidence/08-own-mcp.md">08</a></td></tr>
+<tr><td>Hook</td><td><a href="project/.claude/settings.json">settings.json</a> → <a href="project/.claude/hooks/check-after-edit.sh">check-after-edit.sh</a> → runner <a href="project/scripts/check.sh">check.sh</a></td><td>Проверка после каждой правки кода без просьбы; результат возвращается агенту (PASS — <code>additionalContext</code>, FAIL — exit 2 + stderr).</td><td><a href="evidence/05-hook.md">05</a>: FAIL → PASS; <a href="evidence/06-feature-b.md">06</a>: 24 запуска в работе над B, поймал поломку теста правкой <code>index.html</code></td></tr>
+<tr><td>Субагент (бонус)</td><td><a href="project/.claude/agents/tester.md">tester.md</a></td><td>Независимое ревью без права менять код.</td><td><a href="evidence/06-feature-b.md">06</a>: нашёл контраст 3.70:1 у <code>--ink-2</code> при требовании 4.5:1</td></tr>
 </table>
 
-<h3>Этап 1. Контракт</h3>
-<p><a href="project/docs/requirements.md">docs/requirements.md</a> написан до кода: коды выхода 0/2/3, таблицы сообщений A и B. Допущение <code>MAX_PROMPT_CHARS = 7000</code>: 4096 − 512 = 3584 токена на вход, с запасом 3500, по ~2 символа на токен для русского текста. Текущий промпт — 554 символа.</p>
+<h3>Hook в действии</h3>
+<pre>check-after-edit: FAIL после правки tests/tmp-hook.test.js — ℹ tests 25 ℹ pass 24 ℹ fail 1
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal: actual: 1, expected: 2
+check-after-edit: PASS — ℹ tests 25 ℹ pass 25 ℹ fail 0</pre>
 
-<h3>Этап 2. Подтверждения среды</h3>
-<p><b>AGENTS.md</b> — <code>claude -p "Прочитай AGENTS.md. Назови: 1) файл контракта, 2) пример теста, 3) реальную команду проверки, 4) ограничения ... A" --allowedTools "Read"</code>. Фрагмент ответа:</p>
-<pre>**1) Файл контракта**
-`docs/requirements.md` — указан в `AGENTS.md:8` [сейчас :10] как источник истины ...
-**2) Пример теста**
-`demo/test_service.py` — «пример теста в стиле проекта» (`AGENTS.md:9`) [сейчас :12] ...
-**3) Реальная команда проверки**
-sh scripts/check.sh
-Из каталога `project/` ... `python3 -m py_compile experiment.py`, `python3 -m unittest discover -s tests -v`, `make -C demo test`
-**4) Ограничения ...**
-- все 4 проверки ... выполняются **до любого HTTP-запроса** — `urlopen` не должен вызываться;
-- код выхода 2, ровно одна строка в stderr, без traceback ...</pre>
+<h2 id="skill">Б. Skill</h2>
+<h3>Свой: landing-check — автоматизация приёмки</h3>
+<p>Пять шагов: прочитать критерии → <a href="project/.claude/skills/landing-check/scripts/audit.mjs">audit.mjs</a> (10 статических правил: один <code>h1</code>, якоря, внешние ресурсы, заглушки контактов, подписи <code>svg</code>, FAQ…) → <code>check.sh</code> → браузер через playwright (скролл на 360/1280, консоль, скриншоты против style guide) → контраст токенов через свой MCP → отчёт с итогом <code>PASS/FAIL</code>. Skill только проверяет и обязан писать FAIL, если шаг не выполнился.</p>
+<p><b>Запуск:</b> первый прогон честно дал <code>ИТОГ: FAIL</code> — скрипт аудита не был разрешён в неинтерактивной сессии. Я добавил разрешение в проектный <code>settings.json</code>, продолжил сессию — <code>ИТОГ: PASS</code>: аудит 10/10, тесты 66/66, скролла нет на 360 и 1280, консоль чистая, контраст 12.72 / 5.01 / 5.28 / 7.77.</p>
+<p><b>Проверка результата:</b> аудит и все четыре пары контраста я перезапустил сам — цифры совпали; скриншоты ниже смотрел глазами.</p>
 
-<p><b>Skill</b> — <code>--allowedTools "Skill,Read"</code>. Вызовы из транскрипта:</p>
-<pre>TOOL_USE Skill {"skill": "test-driven-development"}
-RESULT  Launching skill: test-driven-development
-TOOL_USE Read {"file_path": ".../.claude/skills/test-driven-development/writing-good-tests.md"}
-FINAL: **Первый шаг цикла (Red-Green-Refactor): RED** — написать один минимальный тест ... и обязательно увидеть, как он падает ...
-Reference-файл: `.claude/skills/test-driven-development/writing-good-tests.md`
-1. Назови поломку, которую ловит тест ...  2. Ожидаемое значение выводи вручную ...  3. Не ассертить на мок ...</pre>
+<h3>Готовый: frontend-design — мой разбор</h3>
+<p>Это не код, а один <code>SKILL.md</code> — инструкция «дизайнеру студии»: сначала назвать предмет и аудиторию, затем собрать компактную систему токенов (4–6 цветов, шрифты, раскладка ASCII-схемой) и сверить её со списком признаков сгенерированного дизайна, и только потом верстать. Самое ценное — этот список антипаттернов (кремовый фон с терракотой, одинаковые карточки с тенью, капслок-надзаголовки, стрелки в кнопках): он заставляет агента выбирать, а не брать дефолт. В нашем запуске это видно: агент вызвал skill, придумал метафору «приёмо-сдаточный лист осмотра», заменил карточки автопарка реестром и сам проверял себя скриншотами. Слабое место — skill не знает ограничений проекта и не проверяет доступность: запрет внешних шрифтов держит <code>AGENTS.md</code>, а недостаточный контраст выбранного им серого поймал только tester.</p>
 
-<p><b>Context7</b> — <code>--allowedTools "mcp__context7__resolve-library-id,mcp__context7__query-docs"</code>. Статус в init-событии <code>claude -p</code>: <code>{'name': 'context7', 'status': 'connected'}</code>.</p>
-<pre>TOOL_USE mcp__context7__resolve-library-id {"libraryName": "Ollama", ...}      → /websites/ollama_api
-TOOL_USE mcp__context7__resolve-library-id {"libraryName": "Python", ...}      → /python/cpython, /websites/python_3_10 ...
-TOOL_USE mcp__context7__query-docs {"libraryId": "/websites/ollama_api", "query": "/api/chat response when model does not exist: HTTP 404 ..."}
-TOOL_USE mcp__context7__query-docs {"libraryId": "/websites/python_3_10", "query": "urllib.request.urlopen timeout ..."}
-FINAL: ... статус-коды стандартные (200 / 400 / 404 — not found resource / ...), а тело ошибки — JSON с единственным полем `error` ...
-- `urlopen(..., timeout=N)` при истечении таймаута поднимает `socket.timeout`, который с 3.10 — просто алиас `TimeoutError` ...
-- Исторически ... может прийти как `urllib.error.URLError: &lt;urlopen error timed out&gt;`</pre>
-<p>Сырой фрагмент ответа <code>query-docs</code> для <code>/websites/python_3_10</code> (то, что вернул MCP, до синтеза агентом):</p>
-<pre>### Setting Timeout for urllib2.urlopen
-Source: https://docs.python.org/3.10/whatsnew/2.6.html
-An optional timeout parameter can be added to urllib2.urlopen to specify a timeout in seconds for the request. This example demonstrates a timeout error.
-u = urllib2.urlopen("http://slow.example.com", timeout=3)
-Traceback (most recent call last):
-  ...
-urllib2.URLError: &lt;urlopen error timed out&gt;
---------------------------------
-### URLError
-Source: https://docs.python.org/3.10/library/urllib.error.html
-The base ...</pre>
-<p>Отсюда в контракте B таймаут ловится и как <code>TimeoutError</code>, и внутри <code>URLError</code>. Запрос к <code>/websites/ollama_api</code> вернул в основном фрагменты OpenAI-совместимого API (<code>/v1/chat/completions</code>), формат ошибки агент вывел из раздела <code>docs.ollama.com/api/errors</code>. Точного текста ошибки про модель Context7 не дал, поэтому он сверен реальным запросом:</p>
-<pre>$ curl -s -X POST 127.0.0.1:11434/api/chat -d '{"model":"nope:1b",...}'
-{"error":"model 'nope:1b' not found"}
-HTTP 404</pre>
-<p>До одобрения в интерактивном <code>claude</code> команда <code>claude mcp list</code> показывала <code>⏸ Pending approval</code>, хотя в <code>claude -p</code> сервер уже был connected (через <code>enabledMcpjsonServers</code>). После одобрения студентом:</p>
-<pre>$ claude mcp list
-context7: https://mcp.context7.com/mcp (HTTP) - ✔ Connected
-ollama-info: python3 mcp/ollama_info_server.py - ✔ Connected</pre>
+<h2 id="mcp">В. Собственный MCP: contrast / check_contrast</h2>
+<p><a href="project/.claude/mcp/contrast_server.py">contrast_server.py</a> — stdio-сервер без зависимостей (JSON-RPC: <code>initialize</code>, <code>tools/list</code>, <code>tools/call</code>). Tool <code>check_contrast(foreground, background, text_size)</code> считает контраст WCAG 2.1; цвет — hex или токен <code>--name</code>, который сервер читает из <code>:root</code> в <code>styles.css</code>. Польза: после ревью tester проверка палитры стала одним вызовом по реальному коду; протокол и ответы закреплены тестом <a href="project/tests/contrast-mcp.test.js">contrast-mcp.test.js</a> в общем runner.</p>
+<p>Реальные вызовы агентом (<a href="evidence/08-own-mcp.md">08</a>):</p>
+<pre>check_contrast(--ink-2, --paper)   → ratio 5.01, AA pass: true      (после ревью)
+check_contrast(#6E7D86, --paper)   → ratio 3.7,  AA pass: false     (до ревью)
+check_contrast(#12345, --no-such-token)
+  → isError: Ошибка входа: '#12345' → '#12345' не hex-цвет; ожидается #RGB или #RRGGBB
+check_contrast(--ink, --no-such-token)
+  → isError: Ошибка входа: токен --no-such-token не найден в :root файла styles.css; доступны: --display, --gap, --ink, --ink-2, …</pre>
 
-<h3>Этап 3. Фича A (TDD)</h3>
-<p>Тесты: <a href="project/tests/test_experiment.py">tests/test_experiment.py</a> (<code>mock.patch("urllib.request.urlopen")</code>). Сначала тесты падали только из-за сигнатуры <code>main()</code>. После минимального рефакторинга <code>main(argv=None)</code> они упали уже по сути фичи:</p>
-<pre>test_existing_output_rejected_before_request ... ERROR
-FileExistsError: [Errno 17] File exists: '/tmp/tmpk106hfxy/out.json'     ← файл проверялся только после запроса
-test_temperature_above_range_rejected ... FAIL     AssertionError: 0 != 2
-test_empty_model_rejected (value='') ... FAIL
-AttributeError: module 'experiment' has no attribute 'MAX_PROMPT_CHARS'
-Ran 8 tests ... FAILED (failures=4, errors=3)</pre>
-<p>GREEN после реализации (<code>validate_args</code>, <code>build_messages</code>, <code>fail</code>):</p>
-<pre>Ran 8 tests in 0.008s
-OK
-...
-Ran 3 tests in 0.000s   (demo)
-OK
-EXIT=0
-$ python3 experiment.py --mode system --output x.json --temperature 3
-ошибка: --temperature должна быть в диапазоне [0, 2], получено 3      exit=2
-$ python3 experiment.py --mode system --output x.json --model ''
-ошибка: --model не может быть пустым                                  exit=2
-$ python3 experiment.py --mode system --output exists.json
-ошибка: файл результата уже существует: /tmp/p4ev/exists.json         exit=2</pre>
-<p>Стоп-точка 1: студент принял A.</p>
+<h2 id="refl">Г. Рефлексия</h2>
+<p><a href="reflection.md">reflection.md</a> — что помогло, что мешало, где пришлось вмешаться и выводы.</p>
 
-<h3>Этап 4. Style guide и hook</h3>
-<p>Вопрос «назови правило из style guide и место в коде» (<code>--allowedTools "Read,Grep,Glob"</code>):</p>
-<pre>**Правило 5** — «Ошибка — одна строка в stderr и код выхода, без traceback».
-**Место в коде:** `experiment.py:15-17` [сейчас :19-21], функция `fail(message, code=2)` ...</pre>
-<p>Hook: агент в новом <code>claude -p</code> создал временный тест с <code>assertEqual(1 + 1, 3)</code>, затем исправил его (<code>--allowedTools "Read,Write,Edit"</code>):</p>
-<pre>**1) После Write** — hook сработал как blocking error. Первая строка сообщения:
-[sh "$CLAUDE_PROJECT_DIR"/.claude/hooks/check-after-edit.sh]: check.sh: FAIL
-Дальше шёл полный вывод `check.sh`: ... `AssertionError: 2 != 3`, итог `FAILED (failures=1)`.
-**2) После Edit** — hook вернул additional context. Первая (и единственная) строка:
-check.sh: PASS</pre>
-<p class="note">Первая версия hook при успехе молчала, и агент понимал PASS только по отсутствию сообщения. Теперь hook отдаёт <code>check.sh: PASS</code> через <code>additionalContext</code>. Временный тест удалён.</p>
-
-<h3>Этап 5. Фича B в worktree</h3>
-<p><code>git worktree add -b practice-04-b ../ITMOv2-p4-b HEAD</code>. Проверка среды в worktree: init-событие <code>claude -p</code> показало <code>context7: connected</code>, среди skills есть <code>test-driven-development</code>. Ответ агента (<code>--allowedTools "Read,Glob"</code>):</p>
-<pre>1) **AGENTS.md**: контракт — `docs/requirements.md`; команда проверки — `sh scripts/check.sh` (из каталога `project/`, успех только при коде 0). Ссылка на style guide есть: «Перед изменением кода прочитай `docs/style-guide.md`».
-2) **Skills**: проектный — `test-driven-development` (`.claude/skills/test-driven-development/`). ...
-3) **context7**: `mcp__context7__resolve-library-id` и `mcp__context7__query-docs`.
-4) **Hook**: событие `PostToolUse`, matcher `Edit|Write`, команда `sh "$CLAUDE_PROJECT_DIR"/.claude/hooks/check-after-edit.sh`.
-Дополнительно: есть субагент `tester` (`.claude/agents/tester.md`) — read-only + Bash, проверяет по `docs/requirements.md`.</pre>
-<p>Поручение: «Реализуй B по <code>docs/requirements.md</code>. Прочитай <code>AGENTS.md</code> и style guide. Сохрани сценарии A. Покажи результаты проверок». Ход сессии: Read контракта, style guide и кода → Skill TDD → Context7 (resolve + 2 × query-docs) → правка тестов → hook: <code>FAILED (failures=14)</code> → реализация → <code>check.sh</code>: 22 теста, OK.</p>
-<pre>RED: `python3 -m unittest: error: unrecognized arguments: --timeout 12.5`
-     `AssertionError: 'Local Ollama request failed: &lt;urlopen error [Errno 111] Connection refused&gt;' != 3`
-GREEN: Ran 22 tests ... OK, затем make -C demo test — Ran 3 tests ... OK</pre>
-<p><b>Review</b> — субагент tester (Agent tool, <code>subagent_type: tester</code>), файлы не менял:</p>
-<pre>## Подтверждённые проблемы
-1. `--timeout nan` проходит валидацию и даёт traceback с кодом 1 ... `experiment.py:45` [в версии до исправления]: `if args.timeout &lt;= 0:`
-2. `--timeout inf` даёт traceback с кодом 1 ... OverflowError: timestamp out of range for C PyTime_t
-3. Нет теста ни на один из двух случаев выше
-## Доказательства
---timeout nan → rc = 1   ValueError: Invalid value NaN (not a number)
-## Что проверено и работает корректно (реальная Ollama)
-несуществующая модель → rc=3, «модель nosuchmodel:zzz не найдена — `ollama pull nosuchmodel:zzz`»
-реальный таймаут (--timeout 0.5) → rc=3, «Ollama не ответила за 0.5 с»</pre>
-<p>Стоп-точка 3, решения студента: исправить 1–3; добавить тест на URL <code>/api/chat</code>; ответы Ollama с валидным JSON, но не объектом, и проверки отказа соединения и HTTP 500 на живой Ollama не делать. Контракт уточнён с разрешения студента: «конечное число больше 0». Исправления сделала новая сессия <code>claude -p</code> по TDD. Debug-лог hook этой сессии:</p>
-<pre>"Hook PostToolUse:Edit (PostToolUse) error:\ncheck.sh: FAIL\n...      ×3  (новые тесты nan/inf падают)
-Hooks: Parsed initial response: {"hookSpecificOutput":{... "additionalContext":"check.sh: PASS"}}   (после исправления)</pre>
-<pre># вывод на момент коммита 986b979; текст сообщения позже уточнён во внутренней проверке (раунд 2)
-$ python3 experiment.py --mode system --timeout nan --output t.json  → ошибка: --timeout должен быть больше 0, получено nan   rc=2
-$ python3 experiment.py --mode system --timeout inf --output t.json  → ошибка: --timeout должен быть больше 0, получено inf   rc=2
-# текущая версия: ошибка: --timeout должен быть конечным числом больше 0, получено nan (inf)   rc=2
-$ python3 experiment.py --mode system --model nope:1b --output t.json → модель nope:1b не найдена — `ollama pull nope:1b`   rc=3
-Ran 25 tests ... OK</pre>
-
-<h3>Этап 6. Объединение и handoff</h3>
-<pre>$ git merge --ff-only practice-04-b
-Обновление a8a6682..986b979
-Fast-forward
-$ sh scripts/check.sh → Ran 25 tests OK; Ran 3 tests OK
-$ git worktree remove ../ITMOv2-p4-b; git branch -d practice-04-b
-Ветка practice-04-b удалена (была 986b979).</pre>
-<p>Handoff — <code>claude -p "Прочитай AGENTS.md и docs/HANDOFF.md. Что сделано и что осталось? Запусти проверку. Ничего не меняй." --allowedTools "Read,Glob,Grep,Bash(sh scripts/check.sh)"</code>. Ответ агента (пересказ совпадает с HANDOFF по смыслу: что сделано, что не проверено, следующий шаг):</p>
-<pre>## Сделано
-- **Фича A** — валидация входа до вызова LLM (коммит `a8a6682`, принята студентом): существующий `--output`, `--temperature` вне [0, 2], пустое `--model`, промпт длиннее `MAX_PROMPT_CHARS = 7000` → код 2 и одна строка в stderr до HTTP-запроса.
-- **Фича B** — ошибки Ollama и `--timeout` (коммит `986b979`, влит `--ff-only` из worktree `practice-04-b`): `--timeout` — конечное число &gt; 0, по умолчанию 300; отказ соединения, таймаут, отсутствующая модель, прочие HTTP-ошибки, невалидный JSON → код 3 и одна строка.
-- Замечания review от субагента `tester` закрыты: `--timeout nan/inf` → код 2, добавлены тесты на `nan`/`inf` и на URL `/api/chat`.
-## Осталось (следующий шаг по HANDOFF)
-Домашнее задание: 1. свой skill `ollama-experiment`; 2. свой MCP-сервер `mcp/ollama_info_server.py`; 3. черновик `reflection.md`; 4. отчёт `REPORT.html`.
-Плюс в разделе «Не проверено»: сценарии отказа соединения / HTTP 500 / невалидного JSON проверены только моками `urlopen` ...
-## Проверка
-`sh scripts/check.sh` — зелёная: 25 тестов `experiment.py` + 3 теста `demo/`, `OK`, код 0. Совпадает с тем, что записано в HANDOFF.</pre>
-
-<h2>Б. Свой skill <code>ollama-experiment</code></h2>
-<p><a href="project/.claude/skills/ollama-experiment/SKILL.md">SKILL.md</a> описывает процедуру, <a href="project/.claude/skills/ollama-experiment/scripts/run_experiment.py">scripts/run_experiment.py</a> автоматизирует её (stdlib):</p>
-<ol>
-  <li>проверяет через <code>/api/tags</code>, что Ollama доступна и модель скачана;</li>
-  <li>запускает <code>experiment.py</code>, результат пишет во временный каталог;</li>
-  <li>сводит <code>decode_tokens_per_second</code>, <code>load_seconds</code>, <code>total_seconds</code> и начало ответа.</li>
-</ol>
-<p>Код выхода скрипта равен коду <code>experiment.py</code>.</p>
-<p>Вызов агентом: <code>claude -p "Используй skill ollama-experiment ..." --allowedTools "Skill,Read,Bash(python3 .claude/skills/ollama-experiment/scripts/run_experiment.py:*)"</code></p>
-<pre>TOOL_USE Skill {"skill": "ollama-experiment"}
-TOOL_USE Bash python3 .claude/skills/ollama-experiment/scripts/run_experiment.py --mode system
-Ollama: доступна, модель qwen3.8:27b скачана
-experiment.py: код выхода 0, запись: /tmp/ollama-exp-j74xlodg/result.json
-decode_tokens_per_second: 5.35
-load_seconds: 7.74
-total_seconds: 19.89
-ответ: В предоставленных материалах нет ответа.  Основание: В контексте указано только «Проверка: make test» и «Зависимости: стандартная библиотека Python 3.10+», информация о CI-системе отсутствует.
-TOOL_USE Bash python3 .claude/skills/ollama-experiment/scripts/run_experiment.py --mode system --model nope:1b
-Exit code 3
-Ollama: доступна, но модели nope:1b нет — `ollama pull nope:1b`
-experiment.py: код выхода 3
-stderr: модель nope:1b не найдена — `ollama pull nope:1b`</pre>
-<p>Сверка с сырым JSON записи: <code>eval_count = 53</code>, <code>eval_duration = 9.906 с</code> → 53 / 9.906 = 5.35 tok/s; <code>load_seconds = 7.736</code>; <code>request.model = qwen3.8:27b</code>, <code>num_ctx 4096</code>, <code>num_predict 512</code>. Сводка skill совпадает. Ошибка второго запуска — это сообщение фичи B.</p>
-
-<h2>В. Свой MCP-сервер <code>ollama_info_server.py</code></h2>
-<p><a href="project/mcp/ollama_info_server.py">mcp/ollama_info_server.py</a> — stdio, JSON-RPC 2.0 только на stdlib: <code>initialize</code>, <code>tools/list</code>, <code>tools/call</code>, <code>ping</code>; уведомления игнорируются. Tool <code>ollama_model_info(model)</code> берёт из <code>/api/show</code> семейство (<code>details.family</code>), размер (<code>details.parameter_size</code>), квантизацию (<code>details.quantization_level</code>) и длину контекста (<code>model_info["&lt;arch&gt;.context_length"]</code>). На пустое имя, отсутствующую модель или недоступную Ollama сервер возвращает результат с <code>isError: true</code> и не падает. Если <code>arguments</code> не объект, сервер тоже отвечает <code>isError: true</code>. На неизвестный tool он отвечает JSON-RPC-ошибкой −32602, на неизвестный метод — −32601, на не-объект — −32600, а любое неожиданное исключение превращает в −32603, не завершая процесс.
-Регистрация: <code>claude mcp add --scope project ollama-info -- python3 mcp/ollama_info_server.py</code>, запись появилась в <a href="project/.mcp.json">.mcp.json</a>, сервер добавлен в <code>enabledMcpjsonServers</code>.</p>
-<p>Реальный вызов: <code>claude -p "Вызови MCP-инструмент ollama_model_info трижды ..." --allowedTools "mcp__ollama-info__ollama_model_info"</code></p>
-<pre>MCP [{'name': 'context7', 'status': 'connected'}, {'name': 'ollama-info', 'status': 'connected'}]
-TOOL_USE mcp__ollama-info__ollama_model_info {"model": "qwen3.8:27b"}
-  RESULT {"model": "qwen3.8:27b", "family": "qwen35", "parameter_size": "27.3B", "quantization_level": "Q4_K_M", "context_length": 262144}
-TOOL_USE mcp__ollama-info__ollama_model_info {"model": ""}
-  RESULT is_error=True "ошибка: имя модели не может быть пустым"
-TOOL_USE mcp__ollama-info__ollama_model_info {"model": "nope:1b"}
-  RESULT is_error=True "ошибка: модель nope:1b не найдена — `ollama pull nope:1b`"</pre>
-<p><b>Польза tool:</b> он показывает, что <code>qwen3.8:27b</code> поддерживает контекст 262144 токена, а проект запускает её с <code>num_ctx 4096</code>. Значит, лимит <code>MAX_PROMPT_CHARS = 7000</code> в фиче A задаёт настройка проекта, а не модель. Его допущение в <code>docs/requirements.md</code> держится на <code>num_ctx</code>, и при увеличении <code>num_ctx</code> лимит можно поднимать. Агент получает эти данные одним вызовом, без чтения <code>ollama show</code> и сырого JSON <code>/api/show</code>.</p>
-
-<h2>Г. Рефлексия</h2>
-<p><a href="reflection.md">reflection.md</a>: где механизм помог, где мешал, где вмешивался студент, и выводы. Ключевые факты:</p>
-<ul>
-  <li>RED в сессии B агент получил от hook. Свой первый <code>check.sh</code> он запустил уже после реализации.</li>
-  <li>Tester нашёл дефекты <code>--timeout nan/inf</code>, которые 22 зелёных теста не ловили.</li>
-  <li>В системе не было <code>make</code>, студент установил его.</li>
-  <li><code>claude mcp list</code> показывал «Pending approval», пока студент не одобрил серверы в интерактивном <code>claude</code>; в <code>claude -p</code> они работали и до этого.</li>
-  <li>Вывод hook не пишется в stream-json, поэтому работа hook доказывалась через <code>--debug-file</code>.</li>
-  <li>Сессия B без поручения отредактировала файл автопамяти Claude Code вне проекта.</li>
-  <li>Стоп-точки:
-    <ul>
-      <li>1 — A принята;</li>
-      <li>2 — коммит без <code>P4_master_prompt.md</code>;</li>
-      <li>3 — приняты все предложения по review и уточнение контракта.</li>
-    </ul>
-  </li>
-</ul>
-<h2>Внутренняя проверка перед сдачей</h2>
-<p>Проверяющий агент — новый процесс <code>claude -p</code> из <code>/tmp/p4grade</code> (без памяти проекта и <code>CLAUDE.md</code>, доступ к репозиторию через <code>--add-dir</code>, только чтение и запуск проверок) — проверил работу по требованиям <a href="README.md">README.md</a> практики (разделы «Что подготовить для сдачи», «Что студент показывает ревьюверу» и «Оценка, 10 баллов») и составил список замечаний. Замечания исправлены, затем проверка повторена.</p>
+<h2 id="flow">Ход работы (как на занятии)</h2>
 <table>
-<tr><th>Раунд</th><th>Замечания</th><th>Исправление</th></tr>
-<tr><td>1</td><td><code>--output</code> в несуществующий каталог → traceback после ответа модели; MCP падал на <code>arguments</code>, не являющемся объектом; выводы рефлексии от первого лица; этапы 5–6 без цитат; устаревшие номера строк и примеры style guide</td><td>Строка контракта, тест и проверка в <code>validate_args</code>; защита и JSON-RPC-ошибки в MCP; раздел выводов рефлексии переработан; цитаты добавлены; примечание о номерах строк; style guide обновлён</td></tr>
-<tr><td>2</td><td>каталог <code>--output</code> без права записи → traceback после ответа модели; отчёт утверждал, что сессия B меняла «только» свои файлы, хотя рефлексия фиксирует правку автопамяти; устаревшие номера строк в цитатах; нет сырого фрагмента Context7; мелочь: сообщение «больше 0» для <code>inf</code></td><td>Строка контракта, тест (RED: <code>PermissionError</code>) и проверка <code>os.access(..., W_OK)</code>; формулировка про границы исправлена; текущие номера строк в цитатах; добавлен сырой фрагмент <code>query-docs</code>; сообщение изменено на «конечным числом больше 0» (контракт, тесты, код)</td></tr>
+<tr><th>Этап</th><th>Что произошло</th><th>Commit</th></tr>
+<tr><td>1–2. Фичи и среда</td><td>Требования A/B, AGENTS.md, frontend-design скопирован из <code>anthropics/skills</code> (прочитан до подключения), playwright MCP, свой skill.</td><td rowspan="2"><code>6706e48</code></td></tr>
+<tr><td>3. Фича A</td><td>Тесты красные (5 pass / 3 fail) → реализация → 24/24; браузер на 360/1280. Сессия оборвалась на лимите — продолжена через <code>--resume</code>.</td></tr>
+<tr><td>4. Style guide и hook</td><td>Агент назвал правила и места в коде; hook FAIL → PASS. Профиль tester.</td><td><code>fe9cdec</code></td></tr>
+<tr><td>5. Фича B</td><td>Git worktree <code>practice-04-b</code>, отдельный сервер на :8001 (порты worktree не изолирует). Новый чат → B (60/60) → ревью tester → два исправления (62/62).</td><td><code>669b085</code></td></tr>
+<tr><td>6. Объединение и handoff</td><td><code>git merge --ff-only</code>, проверка объединённого состояния 62/62. <a href="project/docs/HANDOFF.md">HANDOFF.md</a> — новая сессия верно пересказала состояние и прогнала проверку (<a href="evidence/07-handoff.md">07</a>).</td><td>—</td></tr>
 </table>
-<p>TDD для каталога <code>--output</code> (раунды 1 и 2):</p>
-<pre>RED:   test_missing_output_directory_rejected_before_request ... ERROR
-       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/tmpn7n5jkjs/nodir/out.json'
-GREEN: Ran 26 tests ... OK; Ran 3 tests ... OK
-$ python3 experiment.py --mode system --output /tmp/nodir_x/x.json
-ошибка: каталог для файла результата не существует: /tmp/nodir_x      rc=2
+<p>Все подтверждения: <a href="evidence/">evidence/</a> — для каждой сессии вызовы инструментов, ответы hook из <code>--debug-file</code> и итог агента. Запуск: <code>python3 -m http.server 8000</code> в <code>project/</code>; проверка: <code>make -C practices/practice_04 test</code>.</p>
 
-RED:   test_unwritable_output_directory_rejected_before_request ... ERROR
-       PermissionError: [Errno 13] Permission denied: '/tmp/tmp47skqkqu/ro/out.json'
-GREEN: Ran 27 tests ... OK; Ran 3 tests ... OK
-$ chmod 500 /tmp/ro_x; python3 experiment.py --mode system --output /tmp/ro_x/x.json
-ошибка: нет права записи в каталог файла результата: /tmp/ro_x      rc=2
-$ python3 experiment.py --mode system --timeout inf --output /tmp/x.json
-ошибка: --timeout должен быть конечным числом больше 0, получено inf      rc=2</pre>
-<p>MCP-сервер на некорректном входе (прямой JSON-RPC-зонд):</p>
-<pre>{"id": 2, "result": {"content": [{"type": "text", "text": "ошибка: arguments должен быть объектом {\"model\": ...}"}], "isError": true}}
-{"id": 3, "error": {"code": -32603, "message": "internal error: 'str' object has no attribute 'get'"}}
-{"id": 4, "error": {"code": -32602, "message": "unknown tool: x"}}
-{"id": null, "error": {"code": -32600, "message": "invalid request"}}
-{"id": 6, "result": {"content": [{"type": "text", "text": "{\"model\": \"qwen3.8:27b\", \"family\": \"qwen35\", ...}"}]}}   ← сервер продолжает работать</pre>
+<div class="shots">
+<figure><img src="evidence/screens/ab-1280.png" alt="Лендинг AutoDrive с калькулятором на ширине 1280 пикселей"><figcaption class="muted">A + B, 1280 px</figcaption></figure>
+<figure><img src="evidence/screens/ab-360.png" alt="Лендинг AutoDrive на ширине 360 пикселей"><figcaption class="muted">A + B, 360 px</figcaption></figure>
+</div>
+<figure><img src="evidence/screens/a-1280.png" alt="Лендинг после фичи A, до калькулятора"><figcaption class="muted">После фичи A (до B и до правки контраста)</figcaption></figure>
+</main>
 </body>
 </html>

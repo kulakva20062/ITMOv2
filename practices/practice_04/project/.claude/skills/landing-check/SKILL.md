@@ -1,6 +1,6 @@
 ---
 name: landing-check
-description: Проверяет лендинг AutoDrive на правила AGENTS.md, критерии docs/requirements.md и docs/style-guide.md — статический аудит, тесты, адаптивность в браузере — и пишет отчёт. Используй после правок вёрстки и перед приёмкой фичи.
+description: Проверяет лендинг AutoDrive на правила AGENTS.md, критерии docs/requirements.md и docs/style-guide.md — статический аудит, тесты, адаптивность в браузере, контраст палитры — и пишет отчёт. Используй после правок вёрстки и перед приёмкой фичи.
 ---
 
 # Проверка лендинга
@@ -32,9 +32,12 @@ node .claude/skills/landing-check/scripts/audit.mjs index.html
 3. `browser_console_messages` с уровнем `error` — ошибки JS это `FAIL`.
 4. Сделай `browser_take_screenshot` на обеих ширинах и посмотри на них: совпадает ли страница со style guide.
 
-## 5. Отчёт
+## 5. Контраст палитры (MCP contrast)
+Для каждого токена текста из таблицы `docs/style-guide.md` вызови `check_contrast` с фоном `--paper`: `--ink`, `--ink-2`, `--stamp` — как `normal`; текст на кнопке `--signal` — пара `--ink` на `--signal`. Токены сервер читает из `:root` в `styles.css`, поэтому проверяется реальный код, а не таблица. `AA.pass: false` — это `FAIL`. Если tool вернул `isError`, приведи его текст в отчёте.
+
+## 6. Отчёт
 Запиши `docs/landing-check-report.md`:
-- таблица «проверка — статус — подробности» по шагам 2–4;
+- таблица «проверка — статус — подробности» по шагам 2–5;
 - раздел «Соответствие style guide» — конкретные расхождения со ссылкой на файл и селектор;
 - итог одной строкой: `ИТОГ: PASS` или `ИТОГ: FAIL (N проблем)`.
 

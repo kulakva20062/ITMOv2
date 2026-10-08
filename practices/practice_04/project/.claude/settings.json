@@ -1,5 +1,12 @@
 {
-  "enabledMcpjsonServers": ["playwright"],
+  "enabledMcpjsonServers": ["playwright", "contrast"],
+  "permissions": {
+    "allow": [
+      "Bash(sh scripts/check.sh)",
+      "Bash(node .claude/skills/landing-check/scripts/audit.mjs:*)",
+      "mcp__contrast__check_contrast"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
