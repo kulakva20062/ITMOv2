@@ -4,9 +4,11 @@
 :root {
   --paper: #edf0ee;
   --ink: #1b2a3a;
-  --ink-2: #6e7d86;
+  /* Контраст к --paper 5.01:1 — проходит AA для обычного текста (4.5:1) */
+  --ink-2: #5a6871;
   --rule: #c3cac7;
   --signal: #f0b323;
+  --stamp: #b4342a;
 
   --display: 'Liberation Sans Narrow', 'Arial Narrow', 'Nimbus Sans Narrow', 'DejaVu Sans Condensed', sans-serif;
   --text: ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -307,6 +309,176 @@ a {
   min-height: 1.5rem;
 }
 
+/* Калькулятор: продолжение листа осмотра — поля с подписями, итог как графа сдачи */
+.calc {
+  display: grid;
+  gap: 1.5rem;
+  justify-items: start;
+  width: 100%;
+}
+
+.calc__fields {
+  display: grid;
+  grid-template-columns: minmax(14rem, 24rem) minmax(7rem, 10rem);
+  gap: 1rem var(--gap);
+  width: 100%;
+}
+
+.field {
+  margin: 0;
+  max-width: none;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.field__label {
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.field__control {
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: var(--paper);
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 0.375rem 0;
+  width: 100%;
+}
+
+.field__control:focus-visible {
+  background: var(--paper);
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+/* Поле с ошибкой: линия под полем цветом штампа, не только текст рядом */
+.field__control[aria-invalid='true'] {
+  border-bottom-color: var(--stamp);
+  border-bottom-width: 2px;
+}
+
+.calc__extras {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.calc__extras legend {
+  padding: 0;
+}
+
+.extras {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  max-width: 34rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--rule);
+}
+
+.extra {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.extra__box {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--signal);
+}
+
+.extra__box:focus-visible {
+  background: transparent;
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.extra__hint {
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+/* Ошибка ввода — единственное место для цвета --stamp.
+   Стоит в сетке полей сразу под сроком и тянется на всю ширину, чтобы текст не дробился. */
+.calc__error {
+  grid-column: 1 / -1;
+  margin-top: -0.25rem;
+  color: var(--stamp);
+  font-size: 0.9375rem;
+  max-width: 48ch;
+}
+
+.calc__error:empty,
+.calc__result:empty {
+  display: none;
+}
+
+.calc__result {
+  width: 100%;
+}
+
+.receipt {
+  margin: 0;
+  width: 100%;
+  max-width: 34rem;
+  border-top: 1px solid var(--ink);
+}
+
+.receipt__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.receipt__label {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+}
+
+.receipt__value {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.receipt__row--total {
+  border-top: 1px solid var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.receipt__row--total .receipt__label {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 1.1875rem;
+  font-weight: 700;
+}
+
+.receipt__row--total .receipt__value {
+  font-family: var(--display);
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.receipt__row--deposit .receipt__value {
+  color: var(--ink-2);
+}
+
 /* Условия, порядок, вопросы, контакты */
 .plain {
   margin: 0;
@@ -498,6 +670,21 @@ a {
 
   .car__label {
     min-width: 6.5rem;
+  }
+
+  .calc__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Цена опции уходит под название: три колонки в 360 px не помещаются */
+  .extra {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 0.125rem;
+  }
+
+  .extra__hint {
+    grid-column: 2;
+    text-align: left;
   }
 
   .contacts {

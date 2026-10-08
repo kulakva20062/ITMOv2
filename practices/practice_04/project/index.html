@@ -18,6 +18,7 @@
         <a class="logo" href="#hero">AutoDrive</a>
         <nav class="nav" aria-label="Разделы страницы">
           <a href="#fleet">Автопарк</a>
+          <a href="#calculator">Расчёт</a>
           <a href="#benefits">Условия</a>
           <a href="#how">Как арендовать</a>
           <a href="#faq">Вопросы</a>
@@ -83,6 +84,52 @@
             <div class="fleet__list" id="fleet-list"></div>
           </div>
           <p class="fleet__status" id="fleet-status" role="status"></p>
+        </div>
+      </section>
+
+      <section class="section" id="calculator">
+        <p class="rail">Расчёт</p>
+        <div class="section__body">
+          <h2>Сколько выйдет аренда</h2>
+          <p class="section__note">
+            Срок — от 1 до 30 суток. От 7 суток скидка 10 %, от 14 суток — 15 %. Залог считаем
+            отдельно: он возвращается при сдаче и в итог не входит.
+          </p>
+
+          <form class="calc" id="calc-form" novalidate>
+            <div class="calc__fields">
+              <div class="field">
+                <label class="field__label" for="calc-car">Автомобиль</label>
+                <select class="field__control" id="calc-car" name="car"></select>
+              </div>
+              <div class="field field--days">
+                <label class="field__label" for="calc-days">Срок, суток</label>
+                <input
+                  class="field__control"
+                  id="calc-days"
+                  name="days"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="30"
+                  step="1"
+                  value="3"
+                  aria-describedby="calc-error"
+                />
+              </div>
+              <!-- Ошибка стоит под полем срока и привязана к нему через aria-describedby -->
+              <p class="calc__error" id="calc-error" role="alert"></p>
+            </div>
+
+            <fieldset class="calc__extras">
+              <legend class="field__label">Опции</legend>
+              <div class="extras" id="calc-extras"></div>
+            </fieldset>
+
+            <button class="button" type="submit">Рассчитать стоимость</button>
+
+            <div class="calc__result" id="calc-result"></div>
+          </form>
         </div>
       </section>
 
