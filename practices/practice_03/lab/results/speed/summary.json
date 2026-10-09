@@ -1,0 +1,136 @@
+{
+  "units": {
+    "*_seconds": "s",
+    "decode_tokens_per_second": "tok/s",
+    "output_tokens": "tokens"
+  },
+  "claude_A_warm": {
+    "files": [
+      "A-warm1.jsonl",
+      "A-warm2.jsonl",
+      "A-warm3.jsonl"
+    ],
+    "runs": [
+      {
+        "duration_seconds": 126.18,
+        "api_seconds": 126.147,
+        "ttft_seconds": 25.011,
+        "ttft_stream_seconds": 0.898,
+        "num_turns": 5,
+        "output_tokens": 558
+      },
+      {
+        "duration_seconds": 99.983,
+        "api_seconds": 99.946,
+        "ttft_seconds": 25.06,
+        "ttft_stream_seconds": 0.912,
+        "num_turns": 5,
+        "output_tokens": 471
+      },
+      {
+        "duration_seconds": 119.314,
+        "api_seconds": 119.294,
+        "ttft_seconds": 23.214,
+        "ttft_stream_seconds": 0.883,
+        "num_turns": 6,
+        "output_tokens": 578
+      }
+    ],
+    "median": {
+      "duration_seconds": 119.314,
+      "api_seconds": 119.294,
+      "ttft_seconds": 25.011,
+      "ttft_stream_seconds": 0.898,
+      "num_turns": 5,
+      "output_tokens": 558
+    }
+  },
+  "claude_B_warm": {
+    "files": [
+      "B-warm1.jsonl",
+      "B-warm2.jsonl",
+      "B-warm3.jsonl"
+    ],
+    "runs": [
+      {
+        "duration_seconds": 136.785,
+        "api_seconds": 136.759,
+        "ttft_seconds": 28.321,
+        "ttft_stream_seconds": 4.975,
+        "num_turns": 7,
+        "output_tokens": 618
+      },
+      {
+        "duration_seconds": 130.991,
+        "api_seconds": 130.965,
+        "ttft_seconds": 26.371,
+        "ttft_stream_seconds": 0.966,
+        "num_turns": 6,
+        "output_tokens": 600
+      },
+      {
+        "duration_seconds": 136.184,
+        "api_seconds": 136.164,
+        "ttft_seconds": 22.712,
+        "ttft_stream_seconds": 0.891,
+        "num_turns": 6,
+        "output_tokens": 591
+      }
+    ],
+    "median": {
+      "duration_seconds": 136.184,
+      "api_seconds": 136.164,
+      "ttft_seconds": 26.371,
+      "ttft_stream_seconds": 0.966,
+      "num_turns": 6,
+      "output_tokens": 600
+    }
+  },
+  "api_warm": {
+    "files": [
+      "api-warm1.json",
+      "api-warm2.json",
+      "api-warm3.json"
+    ],
+    "runs": [
+      {
+        "wall_seconds": 12.824834753999312,
+        "load_seconds": 0.001095071,
+        "total_seconds": 12.81175989,
+        "decode_tokens_per_second": 5.07974295189762
+      },
+      {
+        "wall_seconds": 12.877399996999884,
+        "load_seconds": 0.000988888,
+        "total_seconds": 12.864425236,
+        "decode_tokens_per_second": 5.062518014807049
+      },
+      {
+        "wall_seconds": 12.742871488000674,
+        "load_seconds": 0.001023229,
+        "total_seconds": 12.729626551,
+        "decode_tokens_per_second": 5.114325804000888
+      }
+    ],
+    "median": {
+      "wall_seconds": 12.824834753999312,
+      "load_seconds": 0.001023229,
+      "total_seconds": 12.81175989,
+      "decode_tokens_per_second": 5.07974295189762
+    }
+  },
+  "cold-A.jsonl": {
+    "duration_seconds": 114.499,
+    "api_seconds": 114.426,
+    "ttft_seconds": 47.513,
+    "ttft_stream_seconds": 27.575,
+    "num_turns": 4,
+    "output_tokens": 380
+  },
+  "api-cold.json": {
+    "wall_seconds": 21.3154357300009,
+    "load_seconds": 7.143887833,
+    "total_seconds": 21.301253514,
+    "decode_tokens_per_second": 5.1089609527058535
+  }
+}

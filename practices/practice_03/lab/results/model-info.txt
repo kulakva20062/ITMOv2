@@ -1,0 +1,54 @@
+  Model
+    architecture        qwen35     
+    parameters          27.3B      
+    context length      262144     
+    embedding length    5120       
+    quantization        Q4_K_M     
+    requires            0.32.12    
+
+  Capabilities
+    completion    
+    vision        
+    tools         
+    thinking      
+
+  Projector
+    architecture        clip       
+    parameters          460.73M    
+    embedding length    1152       
+    dimensions          5120       
+
+  Parameters
+    temperature          1       
+    top_k                20      
+    top_p                0.95    
+    draft_num_predict    4       
+    min_p                0       
+    presence_penalty     0       
+    repeat_penalty       1       
+
+  License
+    Apache License               
+    Version 2.0, January 2004    
+    ...                          
+
+
+FROM /var/lib/ollama/models/blobs/sha256-f5f1dd8920d417aac2718b0bda3403da274301efdd6760b4f0f4b864ff2ad57d
+FROM /var/lib/ollama/models/blobs/sha256-ac3714bfdddeca31351f2752bf1a63f266f4df87c0b68c895e44945ca704448e
+TEMPLATE {{ .Prompt }}
+RENDERER qwen3.8
+PARSER qwen3.5
+PARAMETER top_p 0.95
+PARAMETER draft_num_predict 4
+PARAMETER min_p 0
+PARAMETER presence_penalty 0
+PARAMETER repeat_penalty 1
+PARAMETER temperature 1
+PARAMETER top_k 20
+LICENSE """
+
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION

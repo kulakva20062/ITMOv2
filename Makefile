@@ -1,4 +1,4 @@
-.PHONY: install test step1 step2 step3
+.PHONY: install test step1 step2 step3 step4
 
 install:
 	@echo "Для практик 1–2 ничего устанавливать не нужно."
@@ -13,3 +13,6 @@ step2:
 
 step3:
 	@$(MAKE) -s -C practices/practice_03 test
+
+step4:
+	@$(MAKE) -s -C practices/practice_04 test

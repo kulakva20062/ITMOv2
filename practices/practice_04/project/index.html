@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AutoDrive — прокат автомобилей</title>
+    <meta
+      name="description"
+      content="AutoDrive: прокат автомобилей с открытой ценой за сутки. Восемь машин четырёх классов, залог возвращаем при сдаче."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <!-- Пустая иконка: браузер не ходит за /favicon.ico, внешних запросов у страницы нет. -->
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <a class="logo" href="#hero">AutoDrive</a>
+        <nav class="nav" aria-label="Разделы страницы">
+          <a href="#fleet">Автопарк</a>
+          <a href="#calculator">Расчёт</a>
+          <a href="#benefits">Условия</a>
+          <a href="#how">Как арендовать</a>
+          <a href="#faq">Вопросы</a>
+          <a href="#contacts">Контакты</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="section section--hero" id="hero">
+        <p class="rail">Лист осмотра №&nbsp;04&#8209;26</p>
+        <div class="section__body">
+          <h1 class="hero__title">Берёте машину — цену видите сразу</h1>
+          <p class="hero__lead">
+            Восемь машин четырёх классов. Цена за сутки открыта в автопарке, залог возвращаем
+            при сдаче машины. Ничего не надо уточнять по телефону.
+          </p>
+          <a class="button" href="#fleet">Выбрать автомобиль</a>
+
+          <svg
+            class="hero__drawing"
+            viewBox="0 0 640 230"
+            role="img"
+            aria-label="Схема автомобиля в профиль, как на листе осмотра: водительская дверь отмечена цветом"
+          >
+            <g class="hero__lines">
+              <path
+                d="M22 172 L22 143 C22 135 28 130 36 129 L124 114 L192 64 C198 57 208 53 218 53 L398 53 C410 53 421 57 429 65 L484 114 L594 130 C606 132 614 140 614 150 L614 172 Z"
+              />
+              <path d="M214 68 L292 68 L292 110 L178 110 Z" />
+              <path d="M308 68 L394 68 L428 110 L308 110 Z" />
+              <path d="M300 112 L300 164" />
+              <circle cx="152" cy="172" r="38" />
+              <circle cx="482" cy="172" r="38" />
+              <circle cx="152" cy="172" r="15" />
+              <circle cx="482" cy="172" r="15" />
+              <path d="M22 212 L614 212" />
+              <path d="M22 204 L22 220" />
+              <path d="M614 204 L614 220" />
+            </g>
+            <path class="hero__panel" d="M196 114 L296 114 L296 164 L196 164 Z" />
+          </svg>
+        </div>
+      </section>
+
+      <section class="section" id="fleet">
+        <p class="rail">Автопарк</p>
+        <div class="section__body">
+          <h2>Восемь машин, цена за сутки</h2>
+          <p class="section__note">
+            Нажмите «Рассчитать» у машины — отметим её как выбранную для расчёта срока.
+          </p>
+
+          <div class="fleet">
+            <div class="fleet__head" aria-hidden="true">
+              <span>Модель</span>
+              <span>Класс</span>
+              <span>Коробка</span>
+              <span>Салон</span>
+              <span>Цена за сутки</span>
+              <span></span>
+            </div>
+            <div class="fleet__list" id="fleet-list"></div>
+          </div>
+          <p class="fleet__status" id="fleet-status" role="status"></p>
+        </div>
+      </section>
+
+      <section class="section" id="calculator">
+        <p class="rail">Расчёт</p>
+        <div class="section__body">
+          <h2>Сколько выйдет аренда</h2>
+          <p class="section__note">
+            Срок — от 1 до 30 суток. От 7 суток скидка 10 %, от 14 суток — 15 %. Залог считаем
+            отдельно: он возвращается при сдаче и в итог не входит.
+          </p>
+
+          <form class="calc" id="calc-form" novalidate>
+            <div class="calc__fields">
+              <div class="field">
+                <label class="field__label" for="calc-car">Автомобиль</label>
+                <select class="field__control" id="calc-car" name="car"></select>
+              </div>
+              <div class="field field--days">
+                <label class="field__label" for="calc-days">Срок, суток</label>
+                <input
+                  class="field__control"
+                  id="calc-days"
+                  name="days"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="30"
+                  step="1"
+                  value="3"
+                  aria-describedby="calc-error"
+                />
+              </div>
+              <!-- Ошибка стоит под полем срока и привязана к нему через aria-describedby -->
+              <p class="calc__error" id="calc-error" role="alert"></p>
+            </div>
+
+            <fieldset class="calc__extras">
+              <legend class="field__label">Опции</legend>
+              <div class="extras" id="calc-extras"></div>
+            </fieldset>
+
+            <button class="button" type="submit">Рассчитать стоимость</button>
+
+            <div class="calc__result" id="calc-result"></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="section" id="benefits">
+        <p class="rail">Условия</p>
+        <div class="section__body">
+          <h2>Что входит в прокат</h2>
+          <ul class="plain">
+            <li>
+              <b>Залог возвращаем при сдаче.</b> Сумма зависит от класса машины и не входит
+              в стоимость аренды.
+            </li>
+            <li>
+              <b>Осмотр по листу с подписью.</b> Царапины фиксируем на схеме до выезда, спорить
+              на сдаче не о чем.
+            </li>
+            <li>
+              <b>Бак полный на выдаче.</b> Возвращаете так же — доплат за топливо нет.
+            </li>
+            <li>
+              <b>Отмена бесплатно за сутки.</b> Позже — удерживаем стоимость одних суток.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section" id="how">
+        <p class="rail">Порядок</p>
+        <div class="section__body">
+          <h2>Как арендовать</h2>
+          <ol class="steps">
+            <li>
+              <h3>Выберите машину</h3>
+              <p>Класс, коробка и число мест указаны в автопарке рядом с ценой за сутки.</p>
+            </li>
+            <li>
+              <h3>Назовите срок</h3>
+              <p>От одних до тридцати суток. От семи суток цена за сутки снижается.</p>
+            </li>
+            <li>
+              <h3>Подпишите лист осмотра</h3>
+              <p>Права, паспорт, залог — и ключи ваши. На оформление уходит четверть часа.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section" id="faq">
+        <p class="rail">Вопросы</p>
+        <div class="section__body">
+          <h2>Что спрашивают чаще всего</h2>
+          <div class="faq">
+            <details>
+              <summary>Какой нужен стаж?</summary>
+              <p>Два года и возраст от 21 года. Для класса «бизнес» — три года и от 25 лет.</p>
+            </details>
+            <details>
+              <summary>Когда вернётся залог?</summary>
+              <p>
+                В день сдачи машины, после осмотра по листу. Если повреждений нет, удержаний
+                тоже нет.
+              </p>
+            </details>
+            <details>
+              <summary>Можно выехать за город?</summary>
+              <p>Да, пробег не ограничен. За пределы области — предупредите при оформлении.</p>
+            </details>
+            <details>
+              <summary>Кто платит за штрафы?</summary>
+              <p>Арендатор. Присылаем копию постановления и ссылку на оплату в день получения.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="contacts">
+        <p class="rail">Контакты</p>
+        <div class="section__body">
+          <h2>Связаться с прокатом</h2>
+          <dl class="contacts">
+            <dt>Телефон</dt>
+            <dd><a href="tel:+70000000000">+7 000 000-00-00</a></dd>
+            <dt>Почта</dt>
+            <dd><a href="mailto:hello@example.com">hello@example.com</a></dd>
+            <dt>Выдача машин</dt>
+            <dd>Ежедневно с 8:00 до 22:00, по предварительной записи</dd>
+          </dl>
+          <p class="disclaimer">
+            AutoDrive — учебный пример. Машины, цены и контакты вымышленные.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

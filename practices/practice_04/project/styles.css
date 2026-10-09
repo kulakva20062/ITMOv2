@@ -1,0 +1,710 @@
+/* AutoDrive. Метафора — приёмо-сдаточный лист осмотра: подписи полей на левой рейке,
+   волосяные линии вместо карточек, янтарь дорожного знака как единственный сигнальный цвет. */
+
+:root {
+  --paper: #edf0ee;
+  --ink: #1b2a3a;
+  /* Контраст к --paper 5.01:1 — проходит AA для обычного текста (4.5:1) */
+  --ink-2: #5a6871;
+  --rule: #c3cac7;
+  --signal: #f0b323;
+  --stamp: #b4342a;
+
+  --display: 'Liberation Sans Narrow', 'Arial Narrow', 'Nimbus Sans Narrow', 'DejaVu Sans Condensed', sans-serif;
+  --text: ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --rail: 164px;
+  --gap: 2rem;
+  --page: 1180px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1.0625rem/1.55 var(--text);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: break-word;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.875rem;
+  line-height: 1.15;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+p {
+  margin: 0;
+  max-width: 62ch;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  background: var(--signal);
+}
+
+/* Шапка */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+
+.topbar__inner {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem var(--gap);
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.nav a {
+  padding: 0.125rem 0;
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+}
+
+.nav a:hover {
+  border-bottom-color: var(--ink);
+}
+
+/* Сетка секции: рейка подписи + поле содержимого */
+.section {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  column-gap: var(--gap);
+  align-items: start;
+}
+
+.section + .section {
+  margin-top: 4.5rem;
+}
+
+.section:last-of-type {
+  padding-bottom: 5rem;
+}
+
+.section__body {
+  display: grid;
+  gap: 1.25rem;
+  justify-items: start;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.75rem;
+}
+
+.rail {
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  line-height: 1.3;
+  padding-top: 0.875rem;
+}
+
+.section__note {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+}
+
+/* Герой */
+.section--hero {
+  padding-top: 3.5rem;
+}
+
+.hero__title {
+  font-size: clamp(2.125rem, 7.5vw, 3.25rem);
+  line-height: 1.02;
+  max-width: 18ch;
+}
+
+.hero__lead {
+  font-size: 1.125rem;
+  max-width: 54ch;
+}
+
+.hero__drawing {
+  width: 100%;
+  max-width: 34rem;
+  height: auto;
+}
+
+.hero__lines path,
+.hero__lines circle {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.hero__panel {
+  fill: var(--signal);
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: panel-fill 900ms 200ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes panel-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Кнопки. Янтарь — только у главного действия в герое, в реестре кнопки тихие. */
+.button,
+.car__action {
+  font: inherit;
+  font-family: var(--display);
+  font-weight: 700;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button {
+  font-size: 1.0625rem;
+  background: var(--signal);
+  padding: 0.5rem 1.25rem;
+}
+
+.car__action {
+  font-size: 0.9375rem;
+  background: transparent;
+  padding: 0.375rem 0.875rem;
+}
+
+.button:hover,
+.car__action:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Автопарк: реестр строк */
+.fleet {
+  /* Реестр выходит в левое поле на ширину отметки, текст остаётся на линии заголовка */
+  width: calc(100% + 0.75rem);
+  margin-left: -0.75rem;
+  border-top: 1px solid var(--ink);
+}
+
+.fleet__head,
+.car {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1.6fr) 8rem 7rem 6.5rem minmax(8rem, 1fr) 8.25rem;
+  align-items: center;
+  column-gap: 1rem;
+  /* Левый отступ — место под отметку выбранной машины, строки не съезжают */
+  padding: 0.625rem 0 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.fleet__head {
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  padding-bottom: 0.375rem;
+}
+
+.car {
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
+}
+
+.car__model {
+  font-size: 1.3125rem;
+}
+
+.car__field {
+  margin: 0;
+  max-width: none;
+}
+
+.car__value {
+  display: block;
+}
+
+.car__field--price .car__value {
+  font-weight: 600;
+}
+
+.car__per {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+/* Подписи полей дублируют шапку реестра: на широком экране их читает только скринридер */
+.car__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.car[data-chosen] {
+  box-shadow: inset 4px 0 0 var(--signal);
+}
+
+.car__action {
+  justify-self: start;
+}
+
+.fleet__status {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  min-height: 1.5rem;
+}
+
+/* Калькулятор: продолжение листа осмотра — поля с подписями, итог как графа сдачи */
+.calc {
+  display: grid;
+  gap: 1.5rem;
+  justify-items: start;
+  width: 100%;
+}
+
+.calc__fields {
+  display: grid;
+  grid-template-columns: minmax(14rem, 24rem) minmax(7rem, 10rem);
+  gap: 1rem var(--gap);
+  width: 100%;
+}
+
+.field {
+  margin: 0;
+  max-width: none;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.field__label {
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.field__control {
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: var(--paper);
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 0.375rem 0;
+  width: 100%;
+}
+
+.field__control:focus-visible {
+  background: var(--paper);
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+/* Поле с ошибкой: линия под полем цветом штампа, не только текст рядом */
+.field__control[aria-invalid='true'] {
+  border-bottom-color: var(--stamp);
+  border-bottom-width: 2px;
+}
+
+.calc__extras {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.calc__extras legend {
+  padding: 0;
+}
+
+.extras {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  max-width: 34rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--rule);
+}
+
+.extra {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.extra__box {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--signal);
+}
+
+.extra__box:focus-visible {
+  background: transparent;
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.extra__hint {
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+/* Ошибка ввода — единственное место для цвета --stamp.
+   Стоит в сетке полей сразу под сроком и тянется на всю ширину, чтобы текст не дробился. */
+.calc__error {
+  grid-column: 1 / -1;
+  margin-top: -0.25rem;
+  color: var(--stamp);
+  font-size: 0.9375rem;
+  max-width: 48ch;
+}
+
+.calc__error:empty,
+.calc__result:empty {
+  display: none;
+}
+
+.calc__result {
+  width: 100%;
+}
+
+.receipt {
+  margin: 0;
+  width: 100%;
+  max-width: 34rem;
+  border-top: 1px solid var(--ink);
+}
+
+.receipt__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.receipt__label {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+}
+
+.receipt__value {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.receipt__row--total {
+  border-top: 1px solid var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.receipt__row--total .receipt__label {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 1.1875rem;
+  font-weight: 700;
+}
+
+.receipt__row--total .receipt__value {
+  font-family: var(--display);
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.receipt__row--deposit .receipt__value {
+  color: var(--ink-2);
+}
+
+/* Условия, порядок, вопросы, контакты */
+.plain {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.875rem;
+  max-width: 62ch;
+}
+
+.plain li {
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--rule);
+}
+
+.plain b {
+  font-weight: 600;
+}
+
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.25rem 1rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--rule);
+}
+
+.steps li::before {
+  content: counter(step);
+  grid-row: 1 / span 2;
+  font-family: var(--display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  line-height: 1;
+}
+
+.faq {
+  width: 100%;
+  max-width: 62ch;
+  border-top: 1px solid var(--rule);
+}
+
+.faq details {
+  border-bottom: 1px solid var(--rule);
+}
+
+.faq summary {
+  font-family: var(--display);
+  font-size: 1.1875rem;
+  font-weight: 700;
+  padding: 0.75rem 0;
+  cursor: pointer;
+}
+
+.faq details[open] summary {
+  color: var(--ink-2);
+}
+
+.faq details p {
+  padding: 0 0 0.875rem;
+}
+
+.contacts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  gap: 0.75rem 1rem;
+  width: 100%;
+  max-width: 48rem;
+}
+
+.contacts dt {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+}
+
+.contacts dd {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+}
+
+.disclaimer {
+  color: var(--ink-2);
+  font-size: 0.875rem;
+}
+
+/* Планшет: рейка уходит над содержимым */
+@media (max-width: 60rem) {
+  .section {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  /* Шапка в две строки — якорю нужен больший отступ сверху */
+  html {
+    scroll-padding-top: 8.5rem;
+  }
+
+  .rail {
+    padding-top: 0;
+    padding-bottom: 0.375rem;
+  }
+
+  .section__body {
+    border-top-width: 1px;
+  }
+
+  .fleet__head {
+    display: none;
+  }
+
+  .car {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    row-gap: 0.375rem;
+    column-gap: 1rem;
+  }
+
+  .car__model {
+    grid-column: 1 / -1;
+  }
+
+  .car__field {
+    grid-column: 1;
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+  }
+
+  .car__label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    color: var(--ink-2);
+    min-width: 7.5rem;
+  }
+
+  .car__value {
+    display: inline;
+  }
+
+  .car__action {
+    grid-column: 2;
+    grid-row: 2 / span 4;
+    align-self: center;
+  }
+}
+
+/* Телефон */
+@media (max-width: 30rem) {
+  .section,
+  .topbar__inner {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .section + .section {
+    margin-top: 3rem;
+  }
+
+  .car {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .car__action {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 0.5rem;
+    justify-self: start;
+  }
+
+  .car__label {
+    min-width: 6.5rem;
+  }
+
+  .calc__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Цена опции уходит под название: три колонки в 360 px не помещаются */
+  .extra {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 0.125rem;
+  }
+
+  .extra__hint {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .contacts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .contacts dd {
+    border-top: 0;
+    padding-top: 0.125rem;
+    padding-bottom: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .hero__panel {
+    animation: none;
+  }
+}

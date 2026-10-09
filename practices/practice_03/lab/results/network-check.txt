@@ -1,0 +1,14 @@
+# TCP sockets of tested process pid=80911, sampled every 0.1 s from start to exit
+# samples: 649
+# unique remote endpoints:
+    649 127.0.0.1:PORT
+# port     649 :11434
+# answer:
+result: success turns=5 duration_ms=127140
+Запуск тестов:
+
+- `make test` — указано в `README.md:6` («Проверка: make test»).
+- Целевая команда — `python3 -m unittest -v` (`Makefile:2-3`).
+- Альтернативно: `python3 -m unittest -v` или `python3 test_service.py` (блок `unittest.main()` в `test_service.py:23-24`).
+
+Тесты находятся в `test_service.py` (класс `SubscribeTest`, строки 5–20), тестируют `service.py`.

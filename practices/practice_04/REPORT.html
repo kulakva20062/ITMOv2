@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Практика 4 — AutoDrive: среда агента, skill и свой MCP</title>
+<style>
+  :root { --ink: #1B2A3A; --ink-2: #5A6871; --paper: #EDF0EE; --rule: #C3CAC7; --signal: #F0B323; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 system-ui, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; }
+  h2 { margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--rule); }
+  h3 { margin: 24px 0 8px; }
+  .muted { color: var(--ink-2); }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); }
+  th { color: var(--ink-2); font-weight: 600; font-size: 13px; }
+  code { font-size: 0.92em; background: #fff; padding: 1px 4px; }
+  pre { background: #fff; padding: 12px; overflow-x: auto; font-size: 13px; line-height: 1.45; border-left: 3px solid var(--signal); }
+  a { color: var(--ink); }
+  .ok { font-weight: 600; }
+  nav a { margin-right: 14px; }
+  figure { margin: 16px 0; }
+  figure img { max-width: 100%; border: 1px solid var(--rule); }
+  .shots { display: grid; grid-template-columns: 3fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 640px) { .shots { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Практика 4: AutoDrive — две фичи с агентом</h1>
+<p class="muted">Лендинг проката автомобилей (вымышленный) повторяет демо с занятия: A — лендинг, B — калькулятор. Агент — Claude Code (<code>claude -p</code>, по сессии на шаг); я ставил задачи, принимал результат и делал commit.</p>
+<nav><a href="#env">А. Среда</a><a href="#skill">Б. Skill</a><a href="#mcp">В. Свой MCP</a><a href="#refl">Г. Рефлексия</a><a href="#flow">Ход работы</a></nav>
+
+<h2 id="env">А. Настроенная среда и зачем она</h2>
+<table>
+<tr><th>Подключение</th><th>Файлы</th><th>Какой шаг улучшает</th><th>Подтверждение применения</th></tr>
+<tr><td>Правила</td><td><a href="project/AGENTS.md">AGENTS.md</a>, <a href="project/CLAUDE.md">CLAUDE.md</a> (<code>@AGENTS.md</code>), <a href="project/docs/requirements.md">requirements.md</a>, <a href="project/docs/style-guide.md">style-guide.md</a></td><td>Постановка задачи: стек, команда проверки, запреты и контракт A/B. Claude Code читает <code>CLAUDE.md</code>, поэтому правила подключены через импорт, а источник один — <code>AGENTS.md</code>.</td><td><a href="evidence/01-agents-md.md">01</a>: без подсказок назвал команду проверки, границы A и B (логика «Рассчитать» — это B), ограничения</td></tr>
+<tr><td>Skill (готовый)</td><td><a href="project/.claude/skills/frontend-design/SKILL.md">frontend-design</a> — Anthropic</td><td>Дизайн с нуля без дизайнера: токены, типографика, отказ от шаблонных решений.</td><td><a href="evidence/02-skill-frontend-design.md">02</a>: вызов <code>Skill frontend-design</code>, план «лист осмотра»; <a href="evidence/04-feature-a.md">04</a>: реализация по плану</td></tr>
+<tr><td>Skill (свой)</td><td><a href="project/.claude/skills/landing-check/SKILL.md">landing-check</a> + <a href="project/.claude/skills/landing-check/scripts/audit.mjs">audit.mjs</a></td><td>Приёмка: одна команда вместо ручного обхода критериев.</td><td><a href="evidence/09-skill-landing-check.md">09</a>, отчёт <a href="project/docs/landing-check-report.md">landing-check-report.md</a></td></tr>
+<tr><td>MCP playwright</td><td><a href="project/.mcp.json">.mcp.json</a> (системный Chromium — NixOS)</td><td>Агент видит отрисованную страницу: горизонтальный скролл, консоль, клики. Тесты по HTML этого не ловят.</td><td><a href="evidence/03-mcp-playwright.md">03</a>: листинг каталога и 404 на пустом проекте; в A агент нашёл по скриншоту рассинхрон колонок на 1280 px</td></tr>
+<tr><td>MCP contrast (свой)</td><td><a href="project/.claude/mcp/contrast_server.py">contrast_server.py</a></td><td>Доступность палитры: контраст токенов из <code>styles.css</code>.</td><td><a href="evidence/08-own-mcp.md">08</a></td></tr>
+<tr><td>Hook</td><td><a href="project/.claude/settings.json">settings.json</a> → <a href="project/.claude/hooks/check-after-edit.sh">check-after-edit.sh</a> → runner <a href="project/scripts/check.sh">check.sh</a></td><td>Проверка после каждой правки кода без просьбы; результат возвращается агенту (PASS — <code>additionalContext</code>, FAIL — exit 2 + stderr).</td><td><a href="evidence/05-hook.md">05</a>: FAIL → PASS; <a href="evidence/06-feature-b.md">06</a>: 24 запуска в работе над B, поймал поломку теста правкой <code>index.html</code></td></tr>
+<tr><td>Субагент (бонус)</td><td><a href="project/.claude/agents/tester.md">tester.md</a></td><td>Независимое ревью без права менять код.</td><td><a href="evidence/06-feature-b.md">06</a>: нашёл контраст 3.70:1 у <code>--ink-2</code> при требовании 4.5:1</td></tr>
+</table>
+
+<h3>Hook в действии</h3>
+<pre>check-after-edit: FAIL после правки tests/tmp-hook.test.js — ℹ tests 25 ℹ pass 24 ℹ fail 1
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal: actual: 1, expected: 2
+check-after-edit: PASS — ℹ tests 25 ℹ pass 25 ℹ fail 0</pre>
+
+<h2 id="skill">Б. Skill</h2>
+<h3>Свой: landing-check — автоматизация приёмки</h3>
+<p>Пять шагов: прочитать критерии → <a href="project/.claude/skills/landing-check/scripts/audit.mjs">audit.mjs</a> (10 статических правил: один <code>h1</code>, якоря, внешние ресурсы, заглушки контактов, подписи <code>svg</code>, FAQ…) → <code>check.sh</code> → браузер через playwright (скролл на 360/1280, консоль, скриншоты против style guide) → контраст токенов через свой MCP → отчёт с итогом <code>PASS/FAIL</code>. Skill только проверяет и обязан писать FAIL, если шаг не выполнился.</p>
+<p><b>Запуск:</b> первый прогон честно дал <code>ИТОГ: FAIL</code> — скрипт аудита не был разрешён в неинтерактивной сессии. Я добавил разрешение в проектный <code>settings.json</code>, продолжил сессию — <code>ИТОГ: PASS</code>: аудит 10/10, тесты 66/66, скролла нет на 360 и 1280, консоль чистая, контраст 12.72 / 5.01 / 5.28 / 7.77.</p>
+<p><b>Проверка результата:</b> аудит и все четыре пары контраста я перезапустил сам — цифры совпали; скриншоты ниже смотрел глазами.</p>
+
+<h3>Готовый: frontend-design — мой разбор</h3>
+<p>Это не код, а один <code>SKILL.md</code> — инструкция «дизайнеру студии»: сначала назвать предмет и аудиторию, затем собрать компактную систему токенов (4–6 цветов, шрифты, раскладка ASCII-схемой) и сверить её со списком признаков сгенерированного дизайна, и только потом верстать. Самое ценное — этот список антипаттернов (кремовый фон с терракотой, одинаковые карточки с тенью, капслок-надзаголовки, стрелки в кнопках): он заставляет агента выбирать, а не брать дефолт. В нашем запуске это видно: агент вызвал skill, придумал метафору «приёмо-сдаточный лист осмотра», заменил карточки автопарка реестром и сам проверял себя скриншотами. Слабое место — skill не знает ограничений проекта и не проверяет доступность: запрет внешних шрифтов держит <code>AGENTS.md</code>, а недостаточный контраст выбранного им серого поймал только tester.</p>
+
+<h2 id="mcp">В. Собственный MCP: contrast / check_contrast</h2>
+<p><a href="project/.claude/mcp/contrast_server.py">contrast_server.py</a> — stdio-сервер без зависимостей (JSON-RPC: <code>initialize</code>, <code>tools/list</code>, <code>tools/call</code>). Tool <code>check_contrast(foreground, background, text_size)</code> считает контраст WCAG 2.1; цвет — hex или токен <code>--name</code>, который сервер читает из <code>:root</code> в <code>styles.css</code>. Польза: после ревью tester проверка палитры стала одним вызовом по реальному коду; протокол и ответы закреплены тестом <a href="project/tests/contrast-mcp.test.js">contrast-mcp.test.js</a> в общем runner.</p>
+<p>Реальные вызовы агентом (<a href="evidence/08-own-mcp.md">08</a>):</p>
+<pre>check_contrast(--ink-2, --paper)   → ratio 5.01, AA pass: true      (после ревью)
+check_contrast(#6E7D86, --paper)   → ratio 3.7,  AA pass: false     (до ревью)
+check_contrast(#12345, --no-such-token)
+  → isError: Ошибка входа: '#12345' → '#12345' не hex-цвет; ожидается #RGB или #RRGGBB
+check_contrast(--ink, --no-such-token)
+  → isError: Ошибка входа: токен --no-such-token не найден в :root файла styles.css; доступны: --display, --gap, --ink, --ink-2, …</pre>
+
+<h2 id="refl">Г. Рефлексия</h2>
+<p><a href="reflection.md">reflection.md</a> — что помогло, что мешало, где пришлось вмешаться и выводы.</p>
+
+<h2 id="flow">Ход работы (как на занятии)</h2>
+<table>
+<tr><th>Этап</th><th>Что произошло</th><th>Commit</th></tr>
+<tr><td>1–2. Фичи и среда</td><td>Требования A/B, AGENTS.md, frontend-design скопирован из <code>anthropics/skills</code> (прочитан до подключения), playwright MCP, свой skill.</td><td rowspan="2"><code>6706e48</code></td></tr>
+<tr><td>3. Фича A</td><td>Тесты красные (5 pass / 3 fail) → реализация → 24/24; браузер на 360/1280. Сессия оборвалась на лимите — продолжена через <code>--resume</code>.</td></tr>
+<tr><td>4. Style guide и hook</td><td>Агент назвал правила и места в коде; hook FAIL → PASS. Профиль tester.</td><td><code>fe9cdec</code></td></tr>
+<tr><td>5. Фича B</td><td>Git worktree <code>practice-04-b</code>, отдельный сервер на :8001 (порты worktree не изолирует). Новый чат → B (60/60) → ревью tester → два исправления (62/62).</td><td><code>669b085</code></td></tr>
+<tr><td>6. Объединение и handoff</td><td><code>git merge --ff-only</code>, проверка объединённого состояния 62/62. <a href="project/docs/HANDOFF.md">HANDOFF.md</a> — новая сессия верно пересказала состояние и прогнала проверку (<a href="evidence/07-handoff.md">07</a>).</td><td>—</td></tr>
+</table>
+<p>Все подтверждения: <a href="evidence/">evidence/</a> — для каждой сессии вызовы инструментов, ответы hook из <code>--debug-file</code> и итог агента. Запуск: <code>python3 -m http.server 8000</code> в <code>project/</code>; проверка: <code>make -C practices/practice_04 test</code>.</p>
+
+<div class="shots">
+<figure><img src="evidence/screens/ab-1280.png" alt="Лендинг AutoDrive с калькулятором на ширине 1280 пикселей"><figcaption class="muted">A + B, 1280 px</figcaption></figure>
+<figure><img src="evidence/screens/ab-360.png" alt="Лендинг AutoDrive на ширине 360 пикселей"><figcaption class="muted">A + B, 360 px</figcaption></figure>
+</div>
+<figure><img src="evidence/screens/a-1280.png" alt="Лендинг после фичи A, до калькулятора"><figcaption class="muted">После фичи A (до B и до правки контраста)</figcaption></figure>
+</main>
+</body>
+</html>

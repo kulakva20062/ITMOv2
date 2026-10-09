@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.83", "--headless", "--browser", "chromium", "--executable-path", "/run/current-system/sw/bin/chromium", "--output-dir", "/tmp/p4-playwright"]
+    },
+    "contrast": {
+      "command": "python3",
+      "args": [".claude/mcp/contrast_server.py"]
+    }
+  }
+}
