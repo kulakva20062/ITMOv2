@@ -3,7 +3,8 @@
 Анализ исходного `lab/service.py` (до исправлений). Все проверки — только против
 своего процесса на `127.0.0.1` с синтетическими данными. Воспроизводимость угроз
 закреплена тестами в `lab/test_security.py`: на исходном коде они дают **18 провалов
-и 4 ошибки** (`python3 -m unittest test_security` на версии из `HEAD`).
+и 4 ошибки** (`python3 -m unittest test_security.SecurityTest` на исходной версии
+`service.py` из коммита `0c8a9c1`).
 
 Методология AI-помощника (вместо OpenCode — Claude Code с `claude-opus-5-5`): рабочая
 сессия получает `GET /assistant/context`, передаёт вход отдельной read-only сессии
