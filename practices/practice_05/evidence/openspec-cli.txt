@@ -1,0 +1,23 @@
+$ openspec list
+Changes:
+  fleet-filter     0/17 tasks    just now
+
+$ openspec list --specs
+No specs found.
+
+$ openspec validate fleet-filter --type change --strict --no-interactive
+Change 'fleet-filter' is valid
+
+$ openspec show fleet-filter --type change --json --deltas-only | head
+{
+  "id": "fleet-filter",
+  "title": "fleet-filter",
+  "deltaCount": 8,
+  "deltas": [
+    {
+      "spec": "fleet-filtering",
+      "operation": "ADDED",
+      "description": "Add requirement: Автопарк SHALL показывать только машины выбранного класса, когда посетитель выбирает класс. Порядок машин сохраняется тот же, что в исходных данных автопарка.",
+      "requirement": {
+        "name": "Отбор по классу автомобиля",
+        "text": "Авто�
