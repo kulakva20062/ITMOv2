@@ -1,0 +1,1313 @@
+{
+  "name": "7.2 ★★ Bugfix autopilot: bug report → fix PR → AI review → merge",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Сверхрезультат: от bug report до main\nWF1 ставит лейбл `bug` → GitHub шлёт `issues.labeled` → этот сценарий:\n1. читает исходники репозитория → **LLM-фиксер** (Kimi k2.6) возвращает исправленный файл\n2. ветка `ai-fix/issue-N-…` + коммит через Contents API → PR `Fixes #N`\n3. **LLM-ревьюер** (другая модель, Kimi k2.5) смотрит diff → review в PR\n4. нет серьёзных замечаний → squash-merge в main (Issue закрывается автоматически), иначе `needs-human-review`",
+        "height": 230,
+        "width": 640,
+        "color": 7
+      },
+      "id": "f2b4efa7-774a-5949-98b0-7c6260c41c43",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -460
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "value": "kulakva20062",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ai-review-sandbox",
+          "mode": "name"
+        },
+        "events": [
+          "issues"
+        ],
+        "options": {}
+      },
+      "id": "113405a3-d579-5fe8-8194-15edce78a8d1",
+      "name": "GitHub Trigger",
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      },
+      "webhookId": "b75ada48-88f5-55e8-bdd6-af66c0f4567b"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "52a51e2a-d8d7-4288-9fd6-ef1cd995cf99",
+              "leftValue": "={{ $json.body.action }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "labeled"
+            },
+            {
+              "id": "5960a31f-5e83-4560-b548-21c35cbda501",
+              "leftValue": "={{ $json.body.label.name }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "bug"
+            },
+            {
+              "id": "fb215fa1-4a18-4cb2-8166-269cf519816f",
+              "leftValue": "={{ $json.body.issue.state }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "open"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "02d68fb3-4186-5e74-812d-a93db5052de2",
+      "name": "Labeled `bug` and open?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "88a1477c-11b7-55a8-8d4c-ba3082dfbf53",
+              "name": "api",
+              "value": "={{ $json.body.repository.url }}",
+              "type": "string"
+            },
+            {
+              "id": "56ba4844-1214-52f3-9d56-a19fab9aceca",
+              "name": "repo",
+              "value": "={{ $json.body.repository.full_name }}",
+              "type": "string"
+            },
+            {
+              "id": "57fbd70e-6de4-59e7-b57a-b78239f74019",
+              "name": "issue_number",
+              "value": "={{ $json.body.issue.number }}",
+              "type": "number"
+            },
+            {
+              "id": "556170e2-d0f8-5721-a519-e09aed7f4767",
+              "name": "issue_key",
+              "value": "={{ $json.body.repository.full_name }}#{{ $json.body.issue.number }}",
+              "type": "string"
+            },
+            {
+              "id": "2cee9a17-4677-5f32-8305-270bf05c39cf",
+              "name": "title",
+              "value": "={{ $json.body.issue.title }}",
+              "type": "string"
+            },
+            {
+              "id": "f4ca4005-844b-5c50-b0cc-1aeab157271b",
+              "name": "body",
+              "value": "={{ $json.body.issue.body || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "ceaae99e-5f94-59fc-8d05-2f17598ef7e7",
+              "name": "default_branch",
+              "value": "={{ $json.body.repository.default_branch || 'main' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a28e5af0-63a7-585c-875b-e74e1cea78ed",
+      "name": "Bug context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "bugfix_runs",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "issue_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.issue_key }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "id": "ab9aab9c-4aee-5f28-8a8f-237c43204352",
+      "name": "Data Table: already fixing?",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5bbf3aa5-a5bf-4641-b532-d7debaa53c4d",
+              "leftValue": "={{ $json.issue_key }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "9a2e3fac-f436-52a7-b370-fb492ce3560d",
+      "name": "Run exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "096f351d-599a-5559-9c7d-e3029711e92b",
+      "name": "Skip (already handled)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Bug context').first().json.api }}/git/trees/{{ $('Bug context').first().json.default_branch }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "recursive",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "id": "8558ecd1-b66f-508b-882a-ffb8669e254b",
+      "name": "Get repo tree",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        40
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Кандидаты для исправления: исходники проекта (без тестов/доков), не больше 12 файлов.\nconst tree = $json.tree || [];\nconst ok = /\\.(py|js|ts|go|java|cs|rb)$/;\nconst files = tree.filter(f => f.type === 'blob' && ok.test(f.path) && !/(^|\\/)(tests?|docs?)\\//.test(f.path) && (f.size || 0) < 30000).slice(0, 12);\nreturn files.map(f => ({ json: { path: f.path } }));"
+      },
+      "id": "a2c7e7e1-9e19-5d08-b424-655e499079a5",
+      "name": "Pick source files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Bug context').first().json.api }}/contents/{{ $json.path }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ref",
+              "value": "={{ $('Bug context').first().json.default_branch }}"
+            }
+          ]
+        }
+      },
+      "id": "2af3d85b-cff1-5237-a813-5f5680a0646b",
+      "name": "Get file contents",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        40
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Готовим промпт фиксеру: текст bug report + исходники с номерами строк.\nconst ctx = $('Bug context').first().json;\nconst files = $input.all().map(i => ({ path: i.json.path, content: Buffer.from(i.json.content || '', 'base64').toString('utf8'), sha: i.json.sha }));\nconst src = files.map(f => `=== FILE: ${f.path} ===\\n` + f.content.split('\\n').map((l, n) => `${String(n + 1).padStart(4)}| ${l}`).join('\\n')).join('\\n\\n');\nconst prompt = `Ты — разработчик, который исправляет баг по bug report из GitHub Issue.\nIssue #${ctx.issue_number}: ${ctx.title}\n${ctx.body}\n\nИсходники репозитория (номера строк только для навигации, в ответ их не включай):\n${src}\n\nНайди причину бага и исправь её МИНИМАЛЬНЫМ изменением в ОДНОМ файле. Не меняй тесты и стиль кода без необходимости.\nВерни путь файла, ПОЛНОЕ новое содержимое этого файла, сообщение коммита и короткое объяснение на русском.`;\nreturn [{ json: { ...ctx, files, prompt } }];"
+      },
+      "id": "139d8d78-576a-5fd4-bfc9-d7ca85b2b35e",
+      "name": "Prepare fix prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "hasOutputParser": true
+      },
+      "id": "e0e1f65d-ad79-50df-9dc0-8088d65790ca",
+      "name": "AI fixer (Basic LLM Chain)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1980,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "kimi-k2.6",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "9afdec57-b84e-583e-813e-69b8ea1f1bf2",
+      "name": "Fixer model: kimi-k2.6",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1940,
+        260
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VSELLM_CRED_ID",
+          "name": "OpenAi (Kimi)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"path\": {\n      \"type\": \"string\"\n    },\n    \"new_content\": {\n      \"type\": \"string\"\n    },\n    \"commit_message\": {\n      \"type\": \"string\"\n    },\n    \"explanation\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"path\",\n    \"new_content\",\n    \"commit_message\",\n    \"explanation\"\n  ]\n}"
+      },
+      "id": "2cdd506e-7282-5940-b48d-7edf9a89c31d",
+      "name": "Fix output parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        2120,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Проверяем ответ фиксера и готовим коммит (base64 для Contents API).\nconst ctx = $('Prepare fix prompt').first().json;\nconst o = $json.output ?? $json;\nconst f = ctx.files.find(x => x.path === o.path);\nif (!f) throw new Error(`Фиксер вернул файл ${o.path}, которого нет среди кандидатов`);\nlet content = String(o.new_content || '');\nif (!content.endsWith('\\n')) content += '\\n';\nif (content.trim() === f.content.trim()) throw new Error('Фиксер не изменил файл');\nconst stamp = $now.toFormat('yyyyLLdd-HHmmss');\nreturn [{ json: { ...ctx, files: undefined, path: f.path, file_sha: f.sha, content_b64: Buffer.from(content, 'utf8').toString('base64'),\n  commit_message: `${o.commit_message || 'Fix bug'} (fixes #${ctx.issue_number})`, explanation: o.explanation || '',\n  branch: `ai-fix/issue-${ctx.issue_number}-${stamp}` } }];"
+      },
+      "id": "1608341b-ae58-5322-a390-f1046388a25b",
+      "name": "Validate fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2300,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Validate fix').first().json.api }}/git/ref/heads/{{ $('Validate fix').first().json.default_branch }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b85793d5-37a5-5e40-9259-ab9ee110333e",
+      "name": "Get base branch sha",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2520,
+        40
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate fix').first().json.api }}/git/refs",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ref: 'refs/heads/' + $('Validate fix').first().json.branch, sha: $json.object.sha }) }}"
+      },
+      "id": "c9405308-49a6-538e-86b0-054379c67a04",
+      "name": "Create fix branch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2740,
+        40
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Validate fix').first().json.api }}/contents/{{ $('Validate fix').first().json.path }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $('Validate fix').first().json.commit_message, content: $('Validate fix').first().json.content_b64, sha: $('Validate fix').first().json.file_sha, branch: $('Validate fix').first().json.branch }) }}"
+      },
+      "id": "ba3ef56f-862f-5b44-9247-afe0e7357326",
+      "name": "Commit fixed file",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2960,
+        40
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate fix').first().json.api }}/pulls",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: `AI fix: ${$('Validate fix').first().json.title}`, head: $('Validate fix').first().json.branch, base: $('Validate fix').first().json.default_branch, body: `Fixes #${$('Validate fix').first().json.issue_number}\\n\\n**Что исправлено:** ${$('Validate fix').first().json.explanation}\\n\\n<sub>Создано n8n bugfix-autopilot · execution ${$execution.id}</sub>` }) }}"
+      },
+      "id": "a28fec83-bb0e-57d3-b8f1-5574544dfa63",
+      "name": "Open fix PR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3180,
+        40
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Validate fix').first().json.api }}/pulls/{{ $json.number }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3.diff"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "29df60a4-7e43-5e48-95e8-9936f71f4805",
+      "name": "Get PR diff",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3400,
+        40
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fx = $('Validate fix').first().json;\nconst diff = typeof $json.data === 'string' ? $json.data : JSON.stringify($json);\nreturn [{ json: { prompt: `Ты — строгий code reviewer. Проверь автоматическое исправление бага перед merge в основную ветку.\nBug report #${fx.issue_number}: ${fx.title}\n${fx.body}\n\nОбъяснение автора исправления: ${fx.explanation}\n\nDiff PR:\n${diff.slice(0, 30000)}\n\nСерьёзные замечания — это: исправление не устраняет описанный баг, ломает другое поведение, ошибка безопасности, синтаксическая ошибка, удалён нужный код.\nСтиль и мелочи серьёзными НЕ считаются. Если серьёзных замечаний нет — verdict = approve, иначе changes_requested.` } }];"
+      },
+      "id": "2d69c632-b731-5cfa-a3d6-3ab92740a692",
+      "name": "Prepare review prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3620,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "hasOutputParser": true
+      },
+      "id": "17ee22d5-9631-50aa-b904-dc5cd7effd79",
+      "name": "AI reviewer (Basic LLM Chain)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        3840,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "kimi-k2.5",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "87c6cf8d-c910-5777-87b8-3ce62ddb358e",
+      "name": "Reviewer model: kimi-k2.5",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        3800,
+        260
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VSELLM_CRED_ID",
+          "name": "OpenAi (Kimi)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"verdict\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"approve\",\n        \"changes_requested\"\n      ]\n    },\n    \"serious_issues\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"summary\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"verdict\",\n    \"serious_issues\",\n    \"summary\"\n  ]\n}"
+      },
+      "id": "c22ec3db-b931-5906-bc9a-55c42706bc9f",
+      "name": "Review output parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        3980,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate fix').first().json.api }}/pulls/{{ $('Open fix PR').first().json.number }}/reviews",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ event: 'COMMENT', body: `## 🤖 AI review перед merge: **${$json.output.verdict}**\\n\\n${$json.output.summary}` + ($json.output.serious_issues.length ? `\\n\\n**Серьёзные замечания:**\\n- ${$json.output.serious_issues.join('\\n- ')}` : '\\n\\nСерьёзных замечаний нет.') }) }}"
+      },
+      "id": "76abc1cf-c924-55de-ad77-25bc472da46a",
+      "name": "Post AI review to PR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4100,
+        40
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cc52ad2e-8f7e-4f54-b5a3-8f7e0fdedc59",
+              "leftValue": "={{ $('AI reviewer (Basic LLM Chain)').first().json.output.verdict }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "approve"
+            },
+            {
+              "id": "ce9fea11-c9b0-4256-8544-224193666a52",
+              "leftValue": "={{ $('AI reviewer (Basic LLM Chain)').first().json.output.serious_issues.length }}",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              },
+              "rightValue": 0
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "04dc1bf9-a486-5692-8e65-94d8658f053e",
+      "name": "Approved, no serious issues?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4320,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Validate fix').first().json.api }}/pulls/{{ $('Open fix PR').first().json.number }}/merge",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ merge_method: 'squash', commit_title: $('Validate fix').first().json.commit_message }) }}"
+      },
+      "id": "5dec78ce-19aa-5716-a77d-ade441b9325e",
+      "name": "Squash-merge into main",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4540,
+        -80
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate fix').first().json.api }}/issues/{{ $('Validate fix').first().json.issue_number }}/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ body: `✅ Исправлено автоматически в #${$('Open fix PR').first().json.number} и смёржено в ${$('Validate fix').first().json.default_branch} после AI review без серьёзных замечаний.` }) }}"
+      },
+      "id": "b7afe049-9f71-55a7-9212-284c36fe39be",
+      "name": "Comment on issue: fixed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4760,
+        -80
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Validate fix').first().json.api }}/issues/{{ $('Open fix PR').first().json.number }}/labels",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: ['needs-human-review'] }) }}"
+      },
+      "id": "678173e0-2691-5999-b943-e67951f20ed8",
+      "name": "Label needs-human-review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4540,
+        160
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "bugfix_runs",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "issue_key": "={{ $('Validate fix').first().json.issue_key }}",
+            "branch": "={{ $('Validate fix').first().json.branch }}",
+            "pr_number": "={{ $('Open fix PR').first().json.number }}",
+            "verdict": "={{ $('AI reviewer (Basic LLM Chain)').first().json.output.verdict }}",
+            "merged": "={{ $('Squash-merge into main').isExecuted }}",
+            "finished_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "issue_key",
+              "displayName": "issue_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "branch",
+              "displayName": "branch",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pr_number",
+              "displayName": "pr_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "verdict",
+              "displayName": "verdict",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "merged",
+              "displayName": "merged",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "finished_at",
+              "displayName": "finished_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "442df739-543d-57bc-ad43-bf2f9a1d031c",
+      "name": "Data Table: record run",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        4980,
+        40
+      ]
+    }
+  ],
+  "connections": {
+    "GitHub Trigger": {
+      "main": [
+        [
+          {
+            "node": "Labeled `bug` and open?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Labeled `bug` and open?": {
+      "main": [
+        [
+          {
+            "node": "Bug context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bug context": {
+      "main": [
+        [
+          {
+            "node": "Data Table: already fixing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Table: already fixing?": {
+      "main": [
+        [
+          {
+            "node": "Run exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run exists?": {
+      "main": [
+        [
+          {
+            "node": "Skip (already handled)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get repo tree",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get repo tree": {
+      "main": [
+        [
+          {
+            "node": "Pick source files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick source files": {
+      "main": [
+        [
+          {
+            "node": "Get file contents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get file contents": {
+      "main": [
+        [
+          {
+            "node": "Prepare fix prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fixer model: kimi-k2.6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI fixer (Basic LLM Chain)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fix output parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI fixer (Basic LLM Chain)",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare fix prompt": {
+      "main": [
+        [
+          {
+            "node": "AI fixer (Basic LLM Chain)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI fixer (Basic LLM Chain)": {
+      "main": [
+        [
+          {
+            "node": "Validate fix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate fix": {
+      "main": [
+        [
+          {
+            "node": "Get base branch sha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get base branch sha": {
+      "main": [
+        [
+          {
+            "node": "Create fix branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create fix branch": {
+      "main": [
+        [
+          {
+            "node": "Commit fixed file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit fixed file": {
+      "main": [
+        [
+          {
+            "node": "Open fix PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open fix PR": {
+      "main": [
+        [
+          {
+            "node": "Get PR diff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get PR diff": {
+      "main": [
+        [
+          {
+            "node": "Prepare review prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reviewer model: kimi-k2.5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI reviewer (Basic LLM Chain)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review output parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI reviewer (Basic LLM Chain)",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare review prompt": {
+      "main": [
+        [
+          {
+            "node": "AI reviewer (Basic LLM Chain)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI reviewer (Basic LLM Chain)": {
+      "main": [
+        [
+          {
+            "node": "Post AI review to PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post AI review to PR": {
+      "main": [
+        [
+          {
+            "node": "Approved, no serious issues?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved, no serious issues?": {
+      "main": [
+        [
+          {
+            "node": "Squash-merge into main",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Label needs-human-review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Squash-merge into main": {
+      "main": [
+        [
+          {
+            "node": "Comment on issue: fixed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comment on issue: fixed": {
+      "main": [
+        [
+          {
+            "node": "Data Table: record run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Label needs-human-review": {
+      "main": [
+        [
+          {
+            "node": "Data Table: record run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Moscow",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [],
+  "id": "p7BugfixAuto001"
+}

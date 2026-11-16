@@ -1,0 +1,553 @@
+{
+  "name": "7.x Setup: create Data Tables (run once)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Запустить один раз вручную\nСоздаёт Data Tables для всех сценариев практики 7 (если уже есть — шаг пропускается).\nВторая ветка — **тестовая запись прошлой недели** для `weekly_stats` (README 7.2 разрешает имитацию).",
+        "height": 170,
+        "width": 560,
+        "color": 7
+      },
+      "id": "6d1aabed-cb76-573c-860c-803238b7f380",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "de485cc4-aece-579c-84f3-63b7a2bf43be",
+      "name": "Run once",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "ai_reviewed_prs",
+        "columns": {
+          "column": [
+            {
+              "name": "pr_key",
+              "type": "string"
+            },
+            {
+              "name": "repo",
+              "type": "string"
+            },
+            {
+              "name": "pr_number",
+              "type": "number"
+            },
+            {
+              "name": "mode",
+              "type": "string"
+            },
+            {
+              "name": "model",
+              "type": "string"
+            },
+            {
+              "name": "trigger",
+              "type": "string"
+            },
+            {
+              "name": "review_id",
+              "type": "string"
+            },
+            {
+              "name": "inline_comments",
+              "type": "number"
+            },
+            {
+              "name": "reviewed_at",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "db65ead5-3104-5795-9293-2fb791fc8ca5",
+      "name": "Create table ai_reviewed_prs",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "processed_issues",
+        "columns": {
+          "column": [
+            {
+              "name": "issue_key",
+              "type": "string"
+            },
+            {
+              "name": "issue_number",
+              "type": "number"
+            },
+            {
+              "name": "repo",
+              "type": "string"
+            },
+            {
+              "name": "author",
+              "type": "string"
+            },
+            {
+              "name": "type",
+              "type": "string"
+            },
+            {
+              "name": "label",
+              "type": "string"
+            },
+            {
+              "name": "confidence",
+              "type": "number"
+            },
+            {
+              "name": "processed_at",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "3d8a5adf-d417-54c8-aeae-e297ff38ee04",
+      "name": "Create table processed_issues",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        460,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "weekly_stats",
+        "columns": {
+          "column": [
+            {
+              "name": "week_start",
+              "type": "string"
+            },
+            {
+              "name": "week_end",
+              "type": "string"
+            },
+            {
+              "name": "repo",
+              "type": "string"
+            },
+            {
+              "name": "issues_opened",
+              "type": "number"
+            },
+            {
+              "name": "issues_closed",
+              "type": "number"
+            },
+            {
+              "name": "prs_opened",
+              "type": "number"
+            },
+            {
+              "name": "prs_merged",
+              "type": "number"
+            },
+            {
+              "name": "bug",
+              "type": "number"
+            },
+            {
+              "name": "task",
+              "type": "number"
+            },
+            {
+              "name": "feature",
+              "type": "number"
+            },
+            {
+              "name": "needs_triage",
+              "type": "number"
+            },
+            {
+              "name": "by_author",
+              "type": "string"
+            },
+            {
+              "name": "saved_at",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "dc30be51-31e2-5a9d-8f50-8fa44f990662",
+      "name": "Create table weekly_stats",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        680,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "bugfix_runs",
+        "columns": {
+          "column": [
+            {
+              "name": "issue_key",
+              "type": "string"
+            },
+            {
+              "name": "branch",
+              "type": "string"
+            },
+            {
+              "name": "pr_number",
+              "type": "number"
+            },
+            {
+              "name": "verdict",
+              "type": "string"
+            },
+            {
+              "name": "merged",
+              "type": "boolean"
+            },
+            {
+              "name": "finished_at",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "id": "832490d6-79b5-5b2f-a7e1-c0a9f5a8c209",
+      "name": "Create table bugfix_runs",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        900,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9adf9ad4-6e24-56c4-8269-9610f25ff8bb",
+              "name": "week_start",
+              "value": "={{ $now.minus({ days: 14 }).toISODate() }}",
+              "type": "string"
+            },
+            {
+              "id": "9e7a6530-c5bd-585a-b435-7bc154f0f226",
+              "name": "week_end",
+              "value": "={{ $now.minus({ days: 7 }).toISODate() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7ac3e8ad-e90f-568d-9686-f0bdc69f1b1e",
+      "name": "Test row: previous week (simulated)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "weekly_stats",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "week_start": "={{ $json.week_start }}",
+            "week_end": "={{ $json.week_end }}",
+            "repo": "kulakva20062/ai-review-sandbox",
+            "issues_opened": "3",
+            "issues_closed": "1",
+            "prs_opened": "1",
+            "prs_merged": "0",
+            "bug": "2",
+            "task": "0",
+            "feature": "1",
+            "needs_triage": "0",
+            "by_author": "[{\"author\":\"kulakva20062\",\"total\":3}]",
+            "saved_at": "={{ $now.toISO() }} (test row)"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "week_start",
+              "displayName": "week_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "week_end",
+              "displayName": "week_end",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "repo",
+              "displayName": "repo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "issues_opened",
+              "displayName": "issues_opened",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "issues_closed",
+              "displayName": "issues_closed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "prs_opened",
+              "displayName": "prs_opened",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "prs_merged",
+              "displayName": "prs_merged",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "bug",
+              "displayName": "bug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "task",
+              "displayName": "task",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "feature",
+              "displayName": "feature",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "needs_triage",
+              "displayName": "needs_triage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "by_author",
+              "displayName": "by_author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "saved_at",
+              "displayName": "saved_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "aa16ff08-5218-5c1f-8e85-0ab8a3d85ba5",
+      "name": "Insert simulated previous week",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        480,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Run once": {
+      "main": [
+        [
+          {
+            "node": "Create table ai_reviewed_prs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create table ai_reviewed_prs": {
+      "main": [
+        [
+          {
+            "node": "Create table processed_issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create table processed_issues": {
+      "main": [
+        [
+          {
+            "node": "Create table weekly_stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create table weekly_stats": {
+      "main": [
+        [
+          {
+            "node": "Create table bugfix_runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create table bugfix_runs": {
+      "main": [
+        [
+          {
+            "node": "Test row: previous week (simulated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test row: previous week (simulated)": {
+      "main": [
+        [
+          {
+            "node": "Insert simulated previous week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Moscow",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [],
+  "id": "p7SetupTables001"
+}

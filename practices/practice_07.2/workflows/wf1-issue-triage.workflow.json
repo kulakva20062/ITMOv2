@@ -1,0 +1,1211 @@
+{
+  "name": "7.2 WF1: GitHub Issues triage (classify → label)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## WF1 — классификация Issues\nissues.opened → дедупликация (Data Table `processed_issues`) → first-time-contributor →\nSub-workflow классификатора → Switch: bug / task / feature, а `confidence < 0.8` или unknown → `needs-triage` **без комментария**.",
+        "height": 170,
+        "width": 620,
+        "color": 7
+      },
+      "id": "ae6b0257-cf5a-5be1-ab47-0d18a45eb709",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "value": "kulakva20062",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ai-review-sandbox",
+          "mode": "name"
+        },
+        "events": [
+          "issues"
+        ],
+        "options": {}
+      },
+      "id": "16ada20f-6d90-506e-af13-2a2b8e5ebd95",
+      "name": "GitHub Trigger",
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      },
+      "webhookId": "d41b5faf-0d4b-5a2c-b8fd-3933687de8f3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b2dbfca8-a8c0-46c3-adda-24e8d548c7d9",
+              "leftValue": "={{ $json.body.action }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "opened"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "da8204ef-0e65-5941-97ba-16816442e59c",
+      "name": "Action is opened?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "cf074c66-3ae5-50fe-be4e-8361aee14441",
+      "name": "Ignore (not opened)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8d960716-ebce-5a74-b84d-009bc9b3392b",
+              "name": "api",
+              "value": "={{ $json.body.repository.url }}",
+              "type": "string"
+            },
+            {
+              "id": "84545124-fbc8-5970-be7f-d49c100b9018",
+              "name": "repo",
+              "value": "={{ $json.body.repository.full_name }}",
+              "type": "string"
+            },
+            {
+              "id": "71438f5e-1d02-5d6e-88cc-f4666587836a",
+              "name": "issue_number",
+              "value": "={{ $json.body.issue.number }}",
+              "type": "number"
+            },
+            {
+              "id": "1e6ea401-a517-5d11-a1db-1e47fce0eef5",
+              "name": "issue_key",
+              "value": "={{ $json.body.repository.full_name }}#{{ $json.body.issue.number }}",
+              "type": "string"
+            },
+            {
+              "id": "633f0af4-81da-5045-9614-73b2f01092d1",
+              "name": "title",
+              "value": "={{ $json.body.issue.title }}",
+              "type": "string"
+            },
+            {
+              "id": "5283d1dd-26b7-52cf-956d-2195e0d0b617",
+              "name": "body",
+              "value": "={{ $json.body.issue.body || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "cbaa96c4-f6b3-5593-83b6-e227c7114066",
+              "name": "author",
+              "value": "={{ $json.body.issue.user.login }}",
+              "type": "string"
+            },
+            {
+              "id": "45a0ab98-6219-5362-b1e1-907555c41de0",
+              "name": "author_association",
+              "value": "={{ $json.body.issue.author_association }}",
+              "type": "string"
+            },
+            {
+              "id": "71bdb803-87b3-578c-8014-b26326c34b30",
+              "name": "html_url",
+              "value": "={{ $json.body.issue.html_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "42470f8a-d250-5a31-b70e-ce6d4c5e8fbb",
+      "name": "Prepare issue",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "processed_issues",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "issue_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.issue_key }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "id": "4cf49c4e-2824-50fd-824d-7199fe6342cc",
+      "name": "Data Table: issue processed?",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2c523c73-fb98-4030-b21a-bdbf79c92040",
+              "leftValue": "={{ $json.issue_key }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "9bef70c6-de57-5e58-bb72-e3fee877eaea",
+      "name": "Already processed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "94de7924-01e2-557d-96c6-2ecff5165491",
+      "name": "Skip duplicate (no reply)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f5b0a510-3e39-49df-abec-6f39b45356a0",
+              "leftValue": "={{ ['NONE','FIRST_TIMER','FIRST_TIME_CONTRIBUTOR'].includes($('Prepare issue').first().json.author_association) }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "9b11b88f-122a-5583-aa4f-5be73e2f9469",
+      "name": "First-time contributor?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare issue').first().json.api }}/issues/{{ $('Prepare issue').first().json.issue_number }}/labels",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: ['first-time-contributor'] }) }}"
+      },
+      "id": "7f367724-5bfe-504f-8c1e-49360edcb1bf",
+      "name": "Label first-time-contributor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -120
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare issue').first().json.api }}/issues/{{ $('Prepare issue').first().json.issue_number }}/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ body: `Привет, @${$('Prepare issue').first().json.author}! 👋 Спасибо за первое обращение в проект. Перед продолжением загляните, пожалуйста, в [CONTRIBUTING.md](https://github.com/${$('Prepare issue').first().json.repo}/blob/main/CONTRIBUTING.md) — там правила участия.` }) }}"
+      },
+      "id": "229a233b-36c0-504f-861b-ef456c2b5949",
+      "name": "Welcome comment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        -120
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "p7IssueClassify1",
+          "mode": "list",
+          "cachedResultName": "7.2 Sub-workflow: issue classifier"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $('Prepare issue').first().json.title }}",
+            "body": "={{ $('Prepare issue').first().json.body }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "body",
+              "displayName": "body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "2c0008b4-a7bc-5974-b9a5-7f9b5aedc53f",
+      "name": "Classify (Execute Sub-workflow)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1760,
+        40
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3c4600ca-3f43-47a3-a8be-e8723450da77",
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "bug"
+                  },
+                  {
+                    "id": "f1621e8d-d557-4493-8919-16c953fcc983",
+                    "leftValue": "={{ $json.confidence }}",
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    },
+                    "rightValue": 0.8
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "bug"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e2114956-8730-4217-b584-3c1dfa8e7b96",
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "task"
+                  },
+                  {
+                    "id": "5c9f60ee-3278-4f79-ae5c-e01643e13da8",
+                    "leftValue": "={{ $json.confidence }}",
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    },
+                    "rightValue": 0.8
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "task"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f9a0e708-ad20-4104-a33a-b79a87d056d3",
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "feature"
+                  },
+                  {
+                    "id": "105d6829-5825-4a2b-b64f-8d705abddfb7",
+                    "leftValue": "={{ $json.confidence }}",
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    },
+                    "rightValue": 0.8
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "feature"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "unknown → needs-triage"
+        }
+      },
+      "id": "c5b5ecfc-4ef7-50d0-b090-100bd50a8a4d",
+      "name": "Route by type (confidence ≥ 0.8)",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1980,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6043caca-2d96-56fa-a1ca-9f8d9baedcd0",
+              "name": "label",
+              "value": "bug",
+              "type": "string"
+            },
+            {
+              "id": "c5656cd6-08ad-5cda-85a0-d32ec2516261",
+              "name": "type",
+              "value": "={{ $json.type }}",
+              "type": "string"
+            },
+            {
+              "id": "7db0c6dd-f8fc-5390-92e9-45c013108db6",
+              "name": "confidence",
+              "value": "={{ $json.confidence }}",
+              "type": "number"
+            },
+            {
+              "id": "765b4d92-98f0-5379-bb37-302ce793d1c1",
+              "name": "reason",
+              "value": "={{ $json.reason }}",
+              "type": "string"
+            },
+            {
+              "id": "87cac6e7-f47a-5ded-882f-c7b668df96a7",
+              "name": "comment",
+              "value": "=🐞 Спасибо! Issue классифицирован как **bug** (уверенность {{ $json.confidence.toFixed(2) }}). Чтобы быстрее исправить, добавьте, пожалуйста: шаги воспроизведения, ожидаемое и фактическое поведение, версию и окружение.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4c57ae26-9d85-50fd-8590-fbd6ee839ec6",
+      "name": "bug: label + comment",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2220,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5bd3fe76-eec1-54fd-a005-ef675645810a",
+              "name": "label",
+              "value": "task",
+              "type": "string"
+            },
+            {
+              "id": "054b5e0b-8fa0-5cf5-8021-d5faf8208536",
+              "name": "type",
+              "value": "={{ $json.type }}",
+              "type": "string"
+            },
+            {
+              "id": "b055915d-f88a-521f-a04c-0e5a4a581ca1",
+              "name": "confidence",
+              "value": "={{ $json.confidence }}",
+              "type": "number"
+            },
+            {
+              "id": "cbd3b485-2a38-56fd-b600-1de8ba6ac4e8",
+              "name": "reason",
+              "value": "={{ $json.reason }}",
+              "type": "string"
+            },
+            {
+              "id": "ba73c32f-2380-5f5a-8dfa-37b39e35d871",
+              "name": "comment",
+              "value": "=📋 Спасибо! Issue классифицирован как **task / вопрос** (уверенность {{ $json.confidence.toFixed(2) }}). Мейнтейнер ответит в ближайшее время; заодно проверьте README — возможно, ответ уже там.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "445d3933-9dea-55db-a47e-bac4c3c140fb",
+      "name": "task: label + comment",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2220,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "90dc4fb1-b816-59ea-b29b-5880163c5249",
+              "name": "label",
+              "value": "feature",
+              "type": "string"
+            },
+            {
+              "id": "904d2177-209a-5e64-aede-dd0884bf0c21",
+              "name": "type",
+              "value": "={{ $json.type }}",
+              "type": "string"
+            },
+            {
+              "id": "c9298c53-35ea-5e3a-85ff-fe91e1ad8f13",
+              "name": "confidence",
+              "value": "={{ $json.confidence }}",
+              "type": "number"
+            },
+            {
+              "id": "e837bda3-5035-57c3-9ec0-306fe350ba0a",
+              "name": "reason",
+              "value": "={{ $json.reason }}",
+              "type": "string"
+            },
+            {
+              "id": "3c3bb542-5b37-58dc-b618-02910cef77ed",
+              "name": "comment",
+              "value": "=✨ Спасибо за идею! Issue классифицирован как **feature request** (уверенность {{ $json.confidence.toFixed(2) }}). Опишите, пожалуйста, сценарий использования и зачем это нужно — так проще оценить приоритет.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "88780233-b01b-5094-87eb-8d92481e58cf",
+      "name": "feature: label + comment",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2220,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a5c574ff-5ade-588f-b67c-f7af1118e41e",
+              "name": "label",
+              "value": "needs-triage",
+              "type": "string"
+            },
+            {
+              "id": "c9ae0a44-6c1c-54e6-bd40-4931bfeded21",
+              "name": "type",
+              "value": "={{ $json.type }}",
+              "type": "string"
+            },
+            {
+              "id": "a2117367-b97e-5f77-946d-80e013068472",
+              "name": "confidence",
+              "value": "={{ $json.confidence }}",
+              "type": "number"
+            },
+            {
+              "id": "a44ad5f7-645c-5bca-bb65-95bd88e2fd40",
+              "name": "reason",
+              "value": "={{ $json.reason }}",
+              "type": "string"
+            },
+            {
+              "id": "27d97901-8ea7-59bb-9cba-0be20b2fddba",
+              "name": "comment",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "212012fb-db0f-5f29-9b72-d56f5c45f944",
+      "name": "unknown: needs-triage, no comment",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2220,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare issue').first().json.api }}/issues/{{ $('Prepare issue').first().json.issue_number }}/labels",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: [$json.label] }) }}"
+      },
+      "id": "14c10869-ef6c-5b2f-9031-7f58958cbfe6",
+      "name": "Add type label",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2460,
+        40
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "65737c44-0d6b-4b40-b8a5-3877e3598e3e",
+              "leftValue": "={{ ($('bug: label + comment').isExecuted ? $('bug: label + comment') : $('task: label + comment').isExecuted ? $('task: label + comment') : $('feature: label + comment').isExecuted ? $('feature: label + comment') : $('unknown: needs-triage, no comment')).first().json.comment }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "d7fcc002-8a68-58c1-82b7-5004d9b04bdc",
+      "name": "Has comment? (needs-triage → no)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2680,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare issue').first().json.api }}/issues/{{ $('Prepare issue').first().json.issue_number }}/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ body: ($('bug: label + comment').isExecuted ? $('bug: label + comment') : $('task: label + comment').isExecuted ? $('task: label + comment') : $('feature: label + comment').isExecuted ? $('feature: label + comment') : $('unknown: needs-triage, no comment')).first().json.comment }) }}"
+      },
+      "id": "961e06b3-3fe3-5460-965e-51dacfe191e6",
+      "name": "Post template comment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2900,
+        -60
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "processed_issues",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "issue_key": "={{ $('Prepare issue').first().json.issue_key }}",
+            "issue_number": "={{ $('Prepare issue').first().json.issue_number }}",
+            "repo": "={{ $('Prepare issue').first().json.repo }}",
+            "author": "={{ $('Prepare issue').first().json.author }}",
+            "type": "={{ ($('bug: label + comment').isExecuted ? $('bug: label + comment') : $('task: label + comment').isExecuted ? $('task: label + comment') : $('feature: label + comment').isExecuted ? $('feature: label + comment') : $('unknown: needs-triage, no comment')).first().json.type }}",
+            "label": "={{ ($('bug: label + comment').isExecuted ? $('bug: label + comment') : $('task: label + comment').isExecuted ? $('task: label + comment') : $('feature: label + comment').isExecuted ? $('feature: label + comment') : $('unknown: needs-triage, no comment')).first().json.label }}",
+            "confidence": "={{ ($('bug: label + comment').isExecuted ? $('bug: label + comment') : $('task: label + comment').isExecuted ? $('task: label + comment') : $('feature: label + comment').isExecuted ? $('feature: label + comment') : $('unknown: needs-triage, no comment')).first().json.confidence }}",
+            "processed_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "issue_key",
+              "displayName": "issue_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "issue_number",
+              "displayName": "issue_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "repo",
+              "displayName": "repo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "author",
+              "displayName": "author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "label",
+              "displayName": "label",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "d252f74e-1092-537c-9b54-74ee0ebc695d",
+      "name": "Data Table: mark issue processed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        40
+      ]
+    }
+  ],
+  "connections": {
+    "GitHub Trigger": {
+      "main": [
+        [
+          {
+            "node": "Action is opened?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action is opened?": {
+      "main": [
+        [
+          {
+            "node": "Prepare issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignore (not opened)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare issue": {
+      "main": [
+        [
+          {
+            "node": "Data Table: issue processed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Table: issue processed?": {
+      "main": [
+        [
+          {
+            "node": "Already processed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already processed?": {
+      "main": [
+        [
+          {
+            "node": "Skip duplicate (no reply)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "First-time contributor?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "First-time contributor?": {
+      "main": [
+        [
+          {
+            "node": "Label first-time-contributor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Classify (Execute Sub-workflow)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Label first-time-contributor": {
+      "main": [
+        [
+          {
+            "node": "Welcome comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Welcome comment": {
+      "main": [
+        [
+          {
+            "node": "Classify (Execute Sub-workflow)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify (Execute Sub-workflow)": {
+      "main": [
+        [
+          {
+            "node": "Route by type (confidence ≥ 0.8)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by type (confidence ≥ 0.8)": {
+      "main": [
+        [
+          {
+            "node": "bug: label + comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "task: label + comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "feature: label + comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "unknown: needs-triage, no comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "bug: label + comment": {
+      "main": [
+        [
+          {
+            "node": "Add type label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "task: label + comment": {
+      "main": [
+        [
+          {
+            "node": "Add type label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "feature: label + comment": {
+      "main": [
+        [
+          {
+            "node": "Add type label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "unknown: needs-triage, no comment": {
+      "main": [
+        [
+          {
+            "node": "Add type label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add type label": {
+      "main": [
+        [
+          {
+            "node": "Has comment? (needs-triage → no)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has comment? (needs-triage → no)": {
+      "main": [
+        [
+          {
+            "node": "Post template comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Data Table: mark issue processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post template comment": {
+      "main": [
+        [
+          {
+            "node": "Data Table: mark issue processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Moscow",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [],
+  "id": "p7IssueTriage001"
+}

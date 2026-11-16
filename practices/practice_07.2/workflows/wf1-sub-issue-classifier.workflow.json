@@ -1,0 +1,175 @@
+{
+  "name": "7.2 Sub-workflow: issue classifier",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Sub-workflow классификатора\nВход: `title`, `body` (Execute Workflow Trigger).\nВыход: `type` (bug/task/feature/unknown), `confidence` (0..1), `reason`.\nBasic LLM Chain + Structured Output Parser → Code нормализует ответ.",
+        "height": 180,
+        "width": 480,
+        "color": 7
+      },
+      "id": "ab7bed7d-7ff7-5925-b5ad-41470062e6be",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "body",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "ee56311b-e590-5518-b36c-39cef47cc24a",
+      "name": "When called by another workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Классифицируй GitHub Issue.\n\nЗаголовок: {{ $json.title }}\nОписание: {{ $json.body }}\n\nТипы:\n- bug — что-то работает не так, как ожидалось (ошибка, падение, неверный результат). Пример: «App crashes on large file: 1) open file >10MB 2) Ctrl+F → crash».\n- feature — запрос новой возможности, которой сейчас нет. Пример: «Add vim keybindings — would improve productivity».\n- task — вопрос по существующему функционалу, просьба/задача по документации или настройке. Пример: «How to configure custom theme colors? Can't find in docs».\n- unknown — по тексту нельзя понять, что нужно, или Issue не по теме.\n\nconfidence — твоя уверенность от 0 до 1. Если описание расплывчатое, короткое или подходит под несколько типов — ставь confidence ниже 0.8.\nreason — одно короткое предложение на русском, почему выбран тип.",
+        "hasOutputParser": true
+      },
+      "id": "26fdf976-ec89-5582-a53c-80b8be53dec2",
+      "name": "AI classifier (Basic LLM Chain)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "kimi-k2.6",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "9d79db8d-c289-588c-acbd-1f3e35a8c53c",
+      "name": "Model: kimi-k2.6",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        220
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VSELLM_CRED_ID",
+          "name": "OpenAi (Kimi)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"type\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"bug\",\n        \"task\",\n        \"feature\",\n        \"unknown\"\n      ]\n    },\n    \"confidence\": {\n      \"type\": \"number\",\n      \"minimum\": 0,\n      \"maximum\": 1\n    },\n    \"reason\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"type\",\n    \"confidence\",\n    \"reason\"\n  ]\n}"
+      },
+      "id": "51db335b-f819-589c-9915-abdc313e5642",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Нормализуем ответ: тип из допустимого списка, confidence в [0;1]. Возвращается вызывающему сценарию.\nreturn $input.all().map(i => {\n  const o = i.json.output ?? i.json;\n  let type = String(o.type || 'unknown').toLowerCase().trim();\n  if (!['bug', 'task', 'feature', 'unknown'].includes(type)) type = 'unknown';\n  let confidence = Number(o.confidence);\n  if (!Number.isFinite(confidence)) confidence = 0;\n  if (confidence > 1 && confidence <= 100) confidence = confidence / 100;\n  confidence = Math.max(0, Math.min(1, confidence));\n  return { json: { type, confidence, reason: o.reason || '' } };\n});"
+      },
+      "id": "48a94742-d4f6-5756-902c-0f926c6de22d",
+      "name": "Normalize type & confidence",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Model: kimi-k2.6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI classifier (Basic LLM Chain)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI classifier (Basic LLM Chain)",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When called by another workflow": {
+      "main": [
+        [
+          {
+            "node": "AI classifier (Basic LLM Chain)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI classifier (Basic LLM Chain)": {
+      "main": [
+        [
+          {
+            "node": "Normalize type & confidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Moscow",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [],
+  "id": "p7IssueClassify1"
+}
