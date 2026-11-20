@@ -1,0 +1,101 @@
+# just start — поднять сервер страницы AutoDrive (порт 8000).
+# Запуск из practices/practice_08 (justfile лежит здесь); сервер запускается
+# из подкаталога project/. Работает из любого состояния: уже запущенный server.js
+# (свой или запущенный вручную) останавливается и стартует свежее. Чужой процесс
+# на порту не трогаем: start/stop сообщают его pid и завершаются с ошибкой,
+# убивать его нужно вручную.
+
+port := "8000"
+dir := justfile_directory()
+project := dir + "/project"
+
+default: help
+
+help:
+    @echo "just start   — запустить http://127.0.0.1:{{port}}/ (уже запущенный server.js перезапускается)"
+    @echo "just stop    — остановить server.js на порту {{port}} (чужие процессы не убивает)"
+    @echo "just status  — показать, слушает ли кто-то порт"
+    @echo "just logs    — последние строки журнала сервера"
+
+start: stop
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{project}}"
+    mkdir -p "{{dir}}/.run"
+    node server.js > "{{dir}}/.run/server.log" 2>&1 &
+    echo "$!" > "{{dir}}/.run/server.pid"
+    for _ in $(seq 1 50); do
+        if curl -fsS -o /dev/null --silent "http://127.0.0.1:{{port}}/" 2>/dev/null; then
+            echo "AutoDrive: http://127.0.0.1:{{port}}/ (pid $(cat "{{dir}}/.run/server.pid"))"
+            exit 0
+        fi
+        sleep 0.1
+    done
+    echo "Сервер не поднялся за 5 секунд; последние строки журнала:" >&2
+    tail -n 20 "{{dir}}/.run/server.log" >&2 || true
+    exit 1
+
+stop:
+    #!/usr/bin/env bash
+    cd "{{project}}"
+    # Останавливаем только server.js: по pid-файлу и по слушающим порт процессам.
+    # Любой другой процесс на порту (например python3 -m http.server) не трогаем —
+    # сообщаем его pid и командную строку и завершаемся с ошибкой.
+    is_server_js() {
+        [ -r "/proc/$1/cmdline" ] && grep -qa 'server\.js' "/proc/$1/cmdline"
+    }
+    ours=""
+    foreign=0
+    # 1. Свой процесс из .run/server.pid — но только если это всё ещё server.js.
+    if [ -f "{{dir}}/.run/server.pid" ]; then
+        pid=$(cat "{{dir}}/.run/server.pid")
+        if [ -d "/proc/$pid" ] && is_server_js "$pid"; then
+            kill "$pid" 2>/dev/null || true
+            ours="$ours $pid"
+        fi
+        rm -f "{{dir}}/.run/server.pid"
+    fi
+    # 2. Процессы, слушающие порт: свои (ручной `node server.js`) глушим, чужие — нет.
+    pids=$(ss -ltnp "sport = :{{port}}" 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u || true)
+    for pid in $pids; do
+        # Процесс мог умереть между опросом порта и проверкой — это не чужой процесс.
+        [ -d "/proc/$pid" ] || continue
+        if is_server_js "$pid"; then
+            kill "$pid" 2>/dev/null || true
+            ours="$ours $pid"
+        else
+            echo "Порт {{port}} занят чужим процессом (pid $pid): $(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null)" >&2
+            echo "Не останавливаю его: just stop убивает только server.js. Остановите процесс вручную." >&2
+            foreign=1
+        fi
+    done
+    # Дожидаемся освобождения порта своими процессами, затем добиваем их SIGKILL.
+    # Чужой процесс ждать не заставляем: сразу выходим с отказом.
+    if [ "$foreign" -eq 0 ]; then
+        for _ in $(seq 1 50); do
+            if ! ss -ltn "sport = :{{port}}" 2>/dev/null | grep -q LISTEN; then
+                exit 0
+            fi
+            sleep 0.1
+        done
+        for pid in $ours; do
+            # Перед SIGKILL проверяем cmdline заново: pid мог успеть переиспользоваться.
+            if [ -d "/proc/$pid" ] && is_server_js "$pid"; then kill -9 "$pid" 2>/dev/null || true; fi
+        done
+    fi
+    if ss -ltn "sport = :{{port}}" 2>/dev/null | grep -q LISTEN; then
+        echo "Порт {{port}} всё ещё занят" >&2
+        exit 1
+    fi
+
+status:
+    #!/usr/bin/env bash
+    if ss -ltn "sport = :{{port}}" 2>/dev/null | grep -q LISTEN; then
+        ss -ltnp "sport = :{{port}}" | tail -n +2
+        echo "занято портом {{port}}"
+    else
+        echo "порт {{port}} свободен"
+    fi
+
+logs:
+    @tail -n 30 "{{dir}}/.run/server.log" 2>/dev/null || echo "журнала ещё нет"

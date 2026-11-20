@@ -1,0 +1,20 @@
+{
+  "enabledMcpjsonServers": ["playwright", "contrast"],
+  "permissions": {
+    "allow": [
+      "Bash(sh scripts/check.sh)",
+      "Bash(node .claude/skills/landing-check/scripts/audit.mjs:*)",
+      "mcp__contrast__check_contrast"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-after-edit.sh", "timeout": 60 }
+        ]
+      }
+    ]
+  }
+}
