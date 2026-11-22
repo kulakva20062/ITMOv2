@@ -16,6 +16,10 @@ help:
     @echo "just stop    — остановить server.js на порту {{port}} (чужие процессы не убивает)"
     @echo "just status  — показать, слушает ли кто-то порт"
     @echo "just logs    — последние строки журнала сервера"
+    @echo "just test    — прогнать Node-тесты и клиентские тесты Playwright"
+
+test:
+    cd "{{project}}" && npm test && npm run test:ui
 
 start: stop
     #!/usr/bin/env bash
