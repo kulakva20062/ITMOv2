@@ -2,18 +2,7 @@
 // Браузер — системный Chromium (в лаборатории его не скачивают); при его отсутствии
 // достаточно `npx playwright install chromium`.
 import { defineConfig } from '@playwright/test';
-import { execSync } from 'node:child_process';
-
-function systemChromiumPath() {
-  for (const candidate of ['chromium', 'chromium-browser', 'google-chrome', 'chromium-beta']) {
-    try {
-      return execSync(`command -v ${candidate}`, { encoding: 'utf8' }).trim();
-    } catch {
-      // пробовали следующий
-    }
-  }
-  return undefined;
-}
+import { chromiumLaunchOptions } from './scripts/chromium.mjs';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -31,9 +20,7 @@ export default defineConfig({
     {
       name: 'chromium',
       use: {
-        launchOptions: { executablePath: systemChromiumPath() },
-        // Системный Chromium в контейнере лаборатории запускается без песочницы.
-        chromiumSandbox: false,
+        launchOptions: chromiumLaunchOptions,
       },
     },
   ],

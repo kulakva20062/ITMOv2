@@ -335,6 +335,8 @@ test.describe('заявка: состояния и валидация', () => {
 });
 
 test.describe('доступность и клавиатура', () => {
+  test.use({ locale: 'ru-RU' });
+
   test('focus-visible: двойной индикатор на paper и signal-outline на night', async ({ page }) => {
     await page.goto('/');
 
@@ -396,9 +398,13 @@ test.describe('доступность и клавиатура', () => {
     await expect(page.locator('#booking-phone')).toBeFocused();
     await page.keyboard.type('+7 000 555-44-33');
     await page.keyboard.press('Tab');
-    await expect(page.locator('#booking-date')).toBeFocused();
-    // Посегментный ввод type=date зависит от локали, поэтому значение ставит fill.
-    await page.locator('#booking-date').fill(futureDate(60));
+    const dateInput = page.locator('#booking-date');
+    await expect(dateInput).toBeFocused();
+    const date = futureDate(60);
+    const [year, month, day] = date.split('-');
+    // Язык Chromium задан в scripts/chromium.mjs. Нативный ввод идёт в порядке ДД.ММ.ГГГГ.
+    await page.keyboard.type(day + month + year);
+    await expect(dateInput).toHaveValue(date);
     await page.keyboard.press('Enter');
 
     await expect(page.locator('#booking-result')).toContainText('AD-7777');

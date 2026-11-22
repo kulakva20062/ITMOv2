@@ -479,6 +479,10 @@
         transition: transform var(--dur-hover) var(--ease-out),
           border-color var(--dur-hover) var(--ease-out), box-shadow var(--dur-hover) var(--ease-out);
       }
+      .fleet-grid .car > .btn {
+        align-self: flex-start;
+        margin-top: auto;
+      }
       .car__meta {
         display: grid;
         grid-template-columns: auto 1fr;
@@ -497,17 +501,17 @@
         font-variant-numeric: tabular-nums;
         font-weight: 650;
       }
-      /* Выбранная карточка §2.3: тёмная граница + жёлтая обводка, выбор дублируется текстом. */
-      .car[data-chosen="true"] {
-        border-color: var(--ink);
-        outline: 2px solid var(--signal);
-      }
       @media (hover: hover) {
         .car:hover {
           transform: translateY(-2px);
           border-color: var(--signal);
           box-shadow: var(--glow-signal);
         }
+      }
+      /* Выбранная карточка §2.3: тёмная граница + жёлтая обводка, выбор дублируется текстом. */
+      .car[data-chosen="true"] {
+        border-color: var(--ink);
+        outline: 2px solid var(--signal);
       }
       /* Статичный кадр hover-glow для макета/вкладки «Движение». */
       .car.is-hover-demo {
@@ -1041,6 +1045,28 @@
                     <button class="btn btn--primary btn--sm" type="button" data-calc-for="korda-mini">Рассчитать</button>
                   </article>
 
+                  <article class="car card hover-glow" data-car-id="mirta-20">
+                    <h3>Мирта 2.0</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>комфорт</dd>
+                      <dt>Коробка</dt><dd>автомат</dd>
+                      <dt>Салон</dt><dd>5 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">3 800 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="mirta-20">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="silta-universal">
+                    <h3>Сильта Универсал</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>комфорт</dd>
+                      <dt>Коробка</dt><dd>механика</dd>
+                      <dt>Салон</dt><dd>5 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">3 500 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="silta-universal">Рассчитать</button>
+                  </article>
+
                   <article class="car card hover-glow" data-car-id="prima-sedan">
                     <h3>Прима Седан</h3>
                     <dl class="car__meta">
@@ -1051,6 +1077,39 @@
                     </dl>
                     <button class="btn btn--primary btn--sm" type="button" data-calc-for="prima-sedan">Рассчитать</button>
                   </article>
+
+                  <article class="car card hover-glow" data-car-id="prima-long">
+                    <h3>Прима Лонг</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>бизнес</dd>
+                      <dt>Коробка</dt><dd>автомат</dd>
+                      <dt>Салон</dt><dd>4 места</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">9 100 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="prima-long">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="nordkap-4x4">
+                    <h3>Нордкап 4×4</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>внедорожник</dd>
+                      <dt>Коробка</dt><dd>автомат</dd>
+                      <dt>Салон</dt><dd>5 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">4 900 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="nordkap-4x4">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="taiga-lift">
+                    <h3>Тайга Лифт</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>внедорожник</dd>
+                      <dt>Коробка</dt><dd>механика</dd>
+                      <dt>Салон</dt><dd>7 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">4 300 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="taiga-lift">Рассчитать</button>
+                  </article>
                 </div>
                 <p class="fleet__status" id="fleet-status" role="status">Выбрана Корда Мини — 2 900 ₽ за сутки.</p>
               </div>
@@ -1059,7 +1118,7 @@
           <div class="note">
             <b>Цены и поля — из <code>src/cars.js</code></b> (Корда Мини 2 900 ₽/сут, эконом, автомат,
             4 места). «Салон» — <code>seatsLabel()</code>: 4 места / 5 мест / 7 мест. Счётчик —
-            <code>countLabel()</code> → «Показано N из M». В макете 3 карточки из восьми для краткости.
+            <code>countLabel()</code> → «Показано N из M». Все восемь карточек идут в порядке автопарка.
           </div>
           <div class="note">
             <b>Пустой результат фильтра:</b> вместо карточек —
