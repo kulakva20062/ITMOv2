@@ -30,6 +30,7 @@ npm start              # node server.js: корень / и /ui отдают web/
 just start             # то же самое из practices/practice_08: justfile лежит там;
                        # если server.js уже слушает 8000 (свой или ручной), останавливает
                        # и поднимает заново; just stop / just status / just logs — там же
+just test              # из practices/practice_08 прогоняет Node и Playwright
 npm run web:dev        # Vite dev-сервер на :5173; /api проксируется на localhost:8000,
                        # поэтому нужен запущенный `npm start`
 npm test               # sh scripts/check.sh: node --test по логике, API и статике
