@@ -1,0 +1,1817 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AutoDrive — макет v2 (React + shadcn/ui), основной сценарий</title>
+    <meta
+      name="description"
+      content="Статический макет редизайна AutoDrive по design-contract v2.1.0: тёмные шапка/hero/footer, paper-секции, 9 экранов сценария и вкладка «Движение»."
+    />
+    <!-- Пустая иконка: браузер не ходит за /favicon.ico, внешних запросов у страницы нет. -->
+    <link rel="icon" href="data:," />
+    <!--
+      Макет v2 = статическая CSS-аппроксимация shadcn/ui-видов по токенам
+      docs/design-contract.md §2. Никаких внешних ресурсов, сборки и JS:
+      файл открывается двойным кликом, вкладки — на CSS (radio + :checked).
+      Bootstrap больше НЕ подключается (переход v1 → v2, контракт §10).
+      Классы .btn/.input/.select/.checkbox/.label/.card/.badge/.separator/.spinner
+      повторяют виды shadcn/ui Button/Input/Select/Checkbox/Label/Card/Badge/Separator/Spinner (§4.3).
+    -->
+    <style>
+      /* ===== Токены контракта §2.1/§2.2 (закрытая палитра, новых цветов нет) ===== */
+      :root {
+        --paper: #edf0ee;
+        --ink: #1b2a3a;
+        --ink-2: #5a6871;
+        --rule: #c3cac7;
+        --signal: #f0b323;
+        --stamp: #b4342a;
+
+        --night: #0f1722;
+        --night-2: #182534;
+        --on-night: #edf0ee;
+        --on-night-2: #a7b4be;
+        --rule-night: #33424f;
+        --stamp-night: #f0a295;
+
+        /* ===== Отображение на shadcn-переменные §2.4 (:root = светлая paper) ===== */
+        --background: var(--paper);
+        --foreground: var(--ink);
+        --card: var(--paper);
+        --card-foreground: var(--ink);
+        --popover: var(--paper);
+        --popover-foreground: var(--ink);
+        --primary: var(--signal);
+        --primary-foreground: var(--ink);
+        --secondary: var(--paper);
+        --secondary-foreground: var(--ink);
+        --muted: var(--paper);
+        --muted-foreground: var(--ink-2);
+        --accent: var(--signal);
+        --accent-foreground: var(--ink);
+        --destructive: var(--stamp);
+        --destructive-foreground: var(--paper);
+        --border: var(--rule);
+        --input: var(--ink-2);
+        --ring: var(--signal);
+        --radius: 2px;
+
+        /* ===== Типографика/отступы §2.5 ===== */
+        --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+          sans-serif;
+        --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+        --space-1: 0.5rem;
+        --space-2: 1rem;
+        --space-3: 1.5rem;
+        --space-4: 2.5rem;
+
+        /* ===== Motion-токены §2.6 ===== */
+        --dur-hover: 160ms;
+        --dur-shake: 240ms;
+        --dur-stamp: 360ms;
+        --dur-fill: 400ms;
+        --dur-reveal: 480ms;
+        --dur-stroke: 1200ms;
+        --stagger-reveal: 60ms;
+        --stagger-stroke: 90ms;
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+        --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        --glow-signal: 0 0 0 1px var(--signal), 0 12px 32px -16px rgb(240 179 35 / 0.45);
+      }
+
+      /* Тёмная поверхность §2.2/§2.4: шапка, hero и footer — одна сцена. */
+      .surface-night {
+        --background: var(--night);
+        --foreground: var(--on-night);
+        --card: var(--night-2);
+        --card-foreground: var(--on-night);
+        --popover: var(--night-2);
+        --popover-foreground: var(--on-night);
+        --secondary: var(--night-2);
+        --secondary-foreground: var(--on-night);
+        --muted: var(--night);
+        --muted-foreground: var(--on-night-2);
+        --destructive: var(--stamp-night);
+        --destructive-foreground: var(--night);
+        --border: var(--rule-night);
+        --input: var(--on-night-2);
+        background: var(--night);
+        color: var(--on-night);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--font-body);
+        line-height: 1.55;
+        background: var(--paper);
+        color: var(--ink);
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.2;
+        font-weight: 650;
+        margin: 0 0 var(--space-2);
+      }
+      h1 {
+        font-size: clamp(1.8rem, 4vw, 2.6rem);
+      }
+      h2 {
+        font-size: 1.5rem;
+      }
+      h3 {
+        font-size: 1.05rem;
+      }
+      p {
+        margin: 0 0 var(--space-2);
+      }
+      a {
+        color: inherit;
+      }
+      dl,
+      dd {
+        margin: 0;
+      }
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
+
+      .container {
+        max-width: 1140px;
+        margin-inline: auto;
+        padding-inline: var(--space-2);
+      }
+      .section {
+        padding: var(--space-4) 0;
+      }
+      .rail {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted-foreground);
+        margin: 0 0 var(--space-1);
+      }
+      .section__note {
+        color: var(--muted-foreground);
+        max-width: 62ch;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ===== shadcn Button (§4.3) ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font: inherit;
+        font-weight: 600;
+        font-size: 0.95rem;
+        line-height: 1.2;
+        padding: 0.55rem 1.1rem;
+        border-radius: var(--radius);
+        border: 1px solid transparent;
+        cursor: pointer;
+        text-decoration: none;
+        background: transparent;
+        color: var(--foreground);
+      }
+      .btn--primary {
+        background: var(--primary);
+        color: var(--primary-foreground);
+        border-color: var(--primary);
+      }
+      .btn--outline {
+        border-color: var(--input);
+        color: var(--foreground);
+        background: transparent;
+      }
+      .btn--sm {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.85rem;
+      }
+      .btn--block {
+        width: 100%;
+      }
+      .btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* ===== shadcn Input / Select / Label / Checkbox (§4.3) ===== */
+      .label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+      .input,
+      .select {
+        width: 100%;
+        font: inherit;
+        font-size: 0.95rem;
+        color: var(--foreground);
+        background: var(--background);
+        border: 1px solid var(--input);
+        border-radius: 0;
+        padding: 0.5rem 0.65rem;
+      }
+      .input::placeholder {
+        color: var(--muted-foreground);
+      }
+      .input[disabled],
+      .select[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: var(--muted);
+      }
+      /* Ошибка — по селектору [aria-invalid], класс is-invalid в v2 не используется (§4.3). */
+      .input[aria-invalid="true"],
+      .select[aria-invalid="true"] {
+        border-color: var(--destructive);
+      }
+      .field {
+        margin-bottom: var(--space-2);
+      }
+      .field__hint {
+        color: var(--muted-foreground);
+        font-size: 0.8rem;
+        margin: 0.35rem 0 0;
+      }
+      .field__error {
+        color: var(--destructive);
+        font-size: 0.85rem;
+        margin: 0.35rem 0 0;
+      }
+      .field__error:empty {
+        display: none;
+      }
+      .required-note {
+        color: var(--muted-foreground);
+        font-size: 0.8rem;
+      }
+      .checkbox {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.3rem 0;
+      }
+      .checkbox input {
+        width: 1rem;
+        height: 1rem;
+        margin-top: 0.2rem;
+        accent-color: var(--signal);
+      }
+      .checkbox__hint {
+        color: var(--muted-foreground);
+        font-size: 0.8rem;
+      }
+      fieldset {
+        border: 0;
+        padding: 0;
+        margin: 0 0 var(--space-2);
+      }
+      legend {
+        padding: 0;
+      }
+
+      /* ===== shadcn Card / Badge / Separator / Spinner (§4.3) ===== */
+      .card {
+        background: var(--card);
+        color: var(--card-foreground);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: var(--space-2);
+      }
+      .card--dashed {
+        border-style: dashed;
+      }
+      .badge {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0.15rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--muted-foreground);
+      }
+      .separator {
+        border: 0;
+        border-top: 1px solid var(--border);
+        margin: var(--space-2) 0;
+      }
+      .spinner {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spin 700ms linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ===== Общий чек Receipt (§4.1.1) ===== */
+      .receipt__row {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-2);
+        padding: 0.35rem 0;
+        border-top: 1px solid var(--border);
+      }
+      .receipt__row:first-child {
+        border-top: 0;
+      }
+      .receipt__label {
+        color: var(--muted-foreground);
+      }
+      .receipt__value {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .receipt__row--total {
+        border-top: 1px solid var(--foreground);
+        font-weight: 700;
+      }
+      .receipt__row--total .receipt__label {
+        color: var(--foreground);
+      }
+      .receipt__row--deposit {
+        border-top: 1px dashed var(--border);
+      }
+
+      /* ===== Штамп успеха (§3.3): базовый стиль = финальный кадр ===== */
+      .success-stamp {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        border: 2px solid var(--stamp);
+        color: var(--stamp);
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        padding: var(--space-1) var(--space-2);
+        border-radius: var(--radius);
+        transform: rotate(-3deg);
+        margin-bottom: var(--space-2);
+      }
+      .success-stamp strong {
+        font-size: 1.2rem;
+        letter-spacing: 0.04em;
+      }
+
+      /* ===== Hero (§5.2) + stroke-draw финальный кадр (§3.2) ===== */
+      .hero {
+        position: relative;
+        overflow: hidden;
+      }
+      .hero__bg {
+        position: absolute;
+        inset: 0;
+        /* Единственный разрешённый градиент — blueprint-сетка (§2.5). */
+        background-image: linear-gradient(to right, var(--rule-night) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--rule-night) 1px, transparent 1px);
+        background-size: 40px 40px;
+        opacity: 0.35;
+      }
+      .hero__inner {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        gap: var(--space-3);
+        align-items: center;
+      }
+      .hero__lead {
+        color: var(--on-night-2);
+        max-width: 46ch;
+      }
+      .hero__drawing {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .hero__lines path,
+      .hero__lines circle {
+        fill: none;
+        stroke: var(--on-night-2);
+        stroke-width: 2;
+      }
+      .hero__panel {
+        fill: var(--signal);
+        opacity: 1;
+      }
+
+      /* ===== Шапка и footer (§5.1/§5.6) ===== */
+      .topbar__inner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2);
+        padding-block: var(--space-2);
+      }
+      .logo {
+        font-weight: 700;
+        font-size: 1.15rem;
+        text-decoration: none;
+        letter-spacing: 0.02em;
+      }
+      .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem 1rem;
+      }
+      .nav a {
+        color: var(--on-night-2);
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+      .nav a:hover {
+        color: var(--on-night);
+      }
+      .contacts dt {
+        color: var(--on-night-2);
+        font-size: 0.85rem;
+        margin-top: var(--space-1);
+      }
+      .contacts dd {
+        margin: 0;
+      }
+      .disclaimer {
+        color: var(--on-night-2);
+        font-size: 0.85rem;
+        margin: var(--space-2) 0 0;
+      }
+
+      /* ===== Автопарк (§5.3) ===== */
+      .fleet-filter {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-2);
+        align-items: end;
+        margin-bottom: var(--space-2);
+      }
+      .fleet-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-2);
+      }
+      .car {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        transition: transform var(--dur-hover) var(--ease-out),
+          border-color var(--dur-hover) var(--ease-out), box-shadow var(--dur-hover) var(--ease-out);
+      }
+      .fleet-grid .car > .btn {
+        align-self: flex-start;
+        margin-top: auto;
+      }
+      .car__meta {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.1rem 0.75rem;
+        font-size: 0.9rem;
+        margin: 0 0 var(--space-1);
+      }
+      .car__meta dt {
+        color: var(--muted-foreground);
+      }
+      .car__meta dd {
+        margin: 0;
+        text-align: right;
+      }
+      .car__price {
+        font-variant-numeric: tabular-nums;
+        font-weight: 650;
+      }
+      @media (hover: hover) {
+        .car:hover {
+          transform: translateY(-2px);
+          border-color: var(--signal);
+          box-shadow: var(--glow-signal);
+        }
+      }
+      /* Выбранная карточка §2.3: тёмная граница + жёлтая обводка, выбор дублируется текстом. */
+      .car[data-chosen="true"] {
+        border-color: var(--ink);
+        outline: 2px solid var(--signal);
+      }
+      /* Статичный кадр hover-glow для макета/вкладки «Движение». */
+      .car.is-hover-demo {
+        transform: translateY(-2px);
+        border-color: var(--signal);
+        box-shadow: var(--glow-signal);
+      }
+      .fleet__empty {
+        color: var(--muted-foreground);
+        border: 1px dashed var(--border);
+        padding: var(--space-2);
+      }
+      .fleet__status {
+        color: var(--muted-foreground);
+        margin-top: var(--space-2);
+      }
+
+      /* ===== Индикаторы фокуса (§9) ===== */
+      /* paper: двойной — outline --ink + жёлтое кольцо --signal. */
+      :focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 3px var(--signal);
+      }
+      /* night: одиночный --signal. */
+      .surface-night :focus-visible {
+        outline: 3px solid var(--signal);
+        outline-offset: 2px;
+        box-shadow: none;
+      }
+      /* Статичная демонстрация фокуса на скриншотах макета. */
+      .focus-demo {
+        outline: 2px solid var(--ink);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 3px var(--signal);
+      }
+      .surface-night .focus-demo {
+        outline: 3px solid var(--signal);
+        outline-offset: 2px;
+        box-shadow: none;
+      }
+
+      /* ===== FAQ (§5.6): нативные details/summary, стилизованные под Card ===== */
+      .faq details {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        margin-bottom: var(--space-1);
+      }
+      .faq summary {
+        cursor: pointer;
+        font-weight: 600;
+        padding: var(--space-1) var(--space-2);
+      }
+      .faq details p {
+        padding: 0 var(--space-2) var(--space-1);
+        margin: 0;
+        color: var(--muted-foreground);
+      }
+      .steps li,
+      .plain li {
+        margin-bottom: var(--space-1);
+      }
+
+      /* ===== Reduced motion §3.5: финальные кадры уже базовы, циклы off ===== */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+        }
+        html {
+          scroll-behavior: auto;
+        }
+      }
+
+      /* ===== Оформление самого макета (chrome, не часть дизайна приложения) ===== */
+      .proto {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: var(--paper);
+        border-bottom: 1px dashed var(--ink-2);
+        padding: var(--space-1) var(--space-2);
+      }
+      .proto__title {
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+      }
+      .proto__sub {
+        color: var(--ink-2);
+        font-size: 0.8rem;
+        margin: 0 0 var(--space-1);
+        max-width: 100ch;
+      }
+      .tabbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+      .tabbar label {
+        font-size: 0.82rem;
+        padding: 0.35rem 0.7rem;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius);
+        color: var(--ink-2);
+        cursor: pointer;
+        user-select: none;
+      }
+      .tabbar label:hover {
+        border-color: var(--ink-2);
+        color: var(--ink);
+      }
+      .tab-radio {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .screen {
+        display: none;
+      }
+      .screens {
+        padding: var(--space-2);
+      }
+      #t-landing:checked ~ .screens #s-landing,
+      #t-fleet:checked ~ .screens #s-fleet,
+      #t-calc:checked ~ .screens #s-calc,
+      #t-empty:checked ~ .screens #s-empty,
+      #t-form:checked ~ .screens #s-form,
+      #t-errors:checked ~ .screens #s-errors,
+      #t-loading:checked ~ .screens #s-loading,
+      #t-success:checked ~ .screens #s-success,
+      #t-server:checked ~ .screens #s-server,
+      #t-motion:checked ~ .screens #s-motion {
+        display: block;
+      }
+      #t-landing:checked ~ .proto .tabbar label[for="t-landing"],
+      #t-fleet:checked ~ .proto .tabbar label[for="t-fleet"],
+      #t-calc:checked ~ .proto .tabbar label[for="t-calc"],
+      #t-empty:checked ~ .proto .tabbar label[for="t-empty"],
+      #t-form:checked ~ .proto .tabbar label[for="t-form"],
+      #t-errors:checked ~ .proto .tabbar label[for="t-errors"],
+      #t-loading:checked ~ .proto .tabbar label[for="t-loading"],
+      #t-success:checked ~ .proto .tabbar label[for="t-success"],
+      #t-server:checked ~ .proto .tabbar label[for="t-server"],
+      #t-motion:checked ~ .proto .tabbar label[for="t-motion"] {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--paper);
+      }
+      #t-landing:focus-visible ~ .proto .tabbar label[for="t-landing"],
+      #t-fleet:focus-visible ~ .proto .tabbar label[for="t-fleet"],
+      #t-calc:focus-visible ~ .proto .tabbar label[for="t-calc"],
+      #t-empty:focus-visible ~ .proto .tabbar label[for="t-empty"],
+      #t-form:focus-visible ~ .proto .tabbar label[for="t-form"],
+      #t-errors:focus-visible ~ .proto .tabbar label[for="t-errors"],
+      #t-loading:focus-visible ~ .proto .tabbar label[for="t-loading"],
+      #t-success:focus-visible ~ .proto .tabbar label[for="t-success"],
+      #t-server:focus-visible ~ .proto .tabbar label[for="t-server"],
+      #t-motion:focus-visible ~ .proto .tabbar label[for="t-motion"] {
+        outline: 2px solid var(--ink);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 3px var(--signal);
+      }
+
+      .frame {
+        border: 1px dashed var(--ink-2);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-bottom: var(--space-2);
+      }
+      .frame__bar {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-2);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--ink-2);
+        background: var(--paper);
+        border-bottom: 1px dashed var(--ink-2);
+        padding: 0.3rem 0.6rem;
+      }
+      .frame--360 {
+        max-width: 360px;
+        margin-inline: auto;
+      }
+      .note {
+        border: 1px solid var(--rule);
+        border-left: 3px solid var(--signal);
+        background: var(--paper);
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+        color: var(--ink);
+        margin: var(--space-2) 0;
+      }
+      .note b {
+        color: var(--ink);
+      }
+      .caption {
+        font-size: 0.82rem;
+        color: var(--ink-2);
+      }
+      .tag {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--ink-2);
+      }
+      .stack > * + * {
+        margin-top: var(--space-2);
+      }
+
+      /* ===== Вкладка «Движение»: статичные кадры ===== */
+      .motion-frames {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-2);
+      }
+      .motion-cell {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: var(--space-1);
+      }
+      .motion-cell .tag {
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+      .reveal-pending {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      .reveal-done {
+        opacity: 1;
+        transform: none;
+      }
+      .stamp-start {
+        opacity: 0;
+        transform: rotate(-8deg) scale(1.15);
+      }
+      .shake-track {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--ink-2);
+      }
+
+      @media (max-width: 760px) {
+        .hero__inner {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .fleet-grid,
+        .fleet-filter,
+        .motion-frames {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      @media (max-width: 480px) {
+        .section {
+          padding: var(--space-3) 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tabs">
+      <!-- CSS-only вкладки: radio + :checked, JS не нужен. Клавиатура: стрелки в радиогруппе. -->
+      <input class="tab-radio" type="radio" name="screen" id="t-landing" checked />
+      <input class="tab-radio" type="radio" name="screen" id="t-fleet" />
+      <input class="tab-radio" type="radio" name="screen" id="t-calc" />
+      <input class="tab-radio" type="radio" name="screen" id="t-empty" />
+      <input class="tab-radio" type="radio" name="screen" id="t-form" />
+      <input class="tab-radio" type="radio" name="screen" id="t-errors" />
+      <input class="tab-radio" type="radio" name="screen" id="t-loading" />
+      <input class="tab-radio" type="radio" name="screen" id="t-success" />
+      <input class="tab-radio" type="radio" name="screen" id="t-server" />
+      <input class="tab-radio" type="radio" name="screen" id="t-motion" />
+
+      <div class="proto">
+        <p class="proto__title">AutoDrive — макет v2 (React + Vite + TS + Tailwind + shadcn/ui)</p>
+        <p class="proto__sub">
+          Статическая аппроксимация shadcn/ui-видов по design-contract v2.1.0. Тёмные
+          <code>.surface-night</code> (шапка + hero + footer), paper-секции, двойной фокус на
+          светлом, финальные кадры анимаций как базовые стили. Цены — из <code>src/cars.js</code>,
+          расчёты — из <code>src/calc.js</code>, строки заявки — из
+          <code>src/booking-text.js</code>. Вкладки — на CSS, без сборки и внешних ресурсов.
+        </p>
+        <div class="tabbar" aria-label="Экраны макета">
+          <label for="t-landing">1. Лендинг</label>
+          <label for="t-fleet">2. Автопарк</label>
+          <label for="t-calc">3. Расчёт</label>
+          <label for="t-empty">4. Нет расчёта</label>
+          <label for="t-form">5. Заполнение + 360px</label>
+          <label for="t-errors">6. Ошибки ввода</label>
+          <label for="t-loading">7. Отправка</label>
+          <label for="t-success">8. Успех</label>
+          <label for="t-server">9. Ошибка сервера</label>
+          <label for="t-motion">10. Движение</label>
+        </div>
+      </div>
+
+      <main class="screens">
+        <!-- ============ 1. ЛЕНДИНГ: тёмная сцена + инфо-секции + footer ============ -->
+        <section class="screen" id="s-landing" aria-label="Лендинг">
+          <div class="frame">
+            <div class="frame__bar"><span>1280px · каркас страницы</span><span>§5.1 / §5.2 / §5.6</span></div>
+            <!-- SiteHeader (тёмный) -->
+            <header class="surface-night">
+              <div class="topbar__inner container">
+                <a class="logo" href="#hero">AutoDrive</a>
+                <nav class="nav" aria-label="Разделы страницы">
+                  <a href="#fleet">Автопарк</a>
+                  <a href="#calculator">Расчёт</a>
+                  <a href="#booking">Заявка</a>
+                  <a href="#benefits">Условия</a>
+                  <a href="#how">Как арендовать</a>
+                  <a href="#faq">Вопросы</a>
+                  <a href="#contacts">Контакты</a>
+                </nav>
+              </div>
+            </header>
+            <!-- HeroSection (тёмный, единая сцена с шапкой) -->
+            <section class="surface-night hero section" id="hero">
+              <div class="hero__bg" aria-hidden="true"></div>
+              <div class="container">
+                <p class="rail">Лист осмотра №&nbsp;04&#8209;26</p>
+                <div class="hero__inner">
+                  <div>
+                    <h1>Берёте машину — цену видите сразу</h1>
+                    <p class="hero__lead">
+                      Восемь машин четырёх классов. Цена за сутки открыта в автопарке, залог
+                      возвращаем при сдаче машины. Ничего не надо уточнять по телефону.
+                    </p>
+                    <a class="btn btn--primary focus-demo" href="#fleet">Выбрать автомобиль</a>
+                    <p class="caption" style="color: var(--on-night-2); margin-top: 0.5rem">
+                      CTA — primary-Button, <code>href="#fleet"</code>; на ней показан фокус
+                      <code>--signal</code> (9.59:1 на тёмном).
+                    </p>
+                  </div>
+                  <svg
+                    class="hero__drawing"
+                    viewBox="0 0 640 230"
+                    role="img"
+                    aria-label="Схема автомобиля в профиль, как на листе осмотра: водительская дверь отмечена цветом"
+                    data-parallax
+                  >
+                    <g class="hero__lines">
+                      <path
+                        d="M22 172 L22 143 C22 135 28 130 36 129 L124 114 L192 64 C198 57 208 53 218 53 L398 53 C410 53 421 57 429 65 L484 114 L594 130 C606 132 614 140 614 150 L614 172 Z"
+                      />
+                      <path d="M214 68 L292 68 L292 110 L178 110 Z" />
+                      <path d="M308 68 L394 68 L428 110 L308 110 Z" />
+                      <path d="M300 112 L300 164" />
+                      <circle cx="152" cy="172" r="38" />
+                      <circle cx="482" cy="172" r="38" />
+                      <circle cx="152" cy="172" r="15" />
+                      <circle cx="482" cy="172" r="15" />
+                      <path d="M22 212 L614 212" />
+                      <path d="M22 204 L22 220" />
+                      <path d="M614 204 L614 220" />
+                    </g>
+                    <path class="hero__panel" d="M196 114 L296 114 L296 164 L196 164 Z" />
+                  </svg>
+                </div>
+                <p class="caption" style="color: var(--on-night-2); margin: var(--space-1) 0 0">
+                  SVG — финальный кадр stroke-draw: контур виден целиком
+                  (<code>stroke-dashoffset: 0</code>), дверь залита <code>--signal</code>
+                  (<code>opacity: 1</code>). Этот же кадр — при reduced-motion. Кадры анимации —
+                  вкладка «Движение».
+                </p>
+              </div>
+            </section>
+
+            <div class="container">
+              <p class="note">
+                Между hero и footer — paper-поток <code>#fleet → #calculator → #booking</code>
+                (отдельные вкладки 2–9), затем инфо-секции <code>#benefits / #how / #faq</code>
+                ниже. Порядок id в DOM — инвариант §4.2.
+              </p>
+            </div>
+
+            <!-- BenefitsSection (paper) -->
+            <section class="section" id="benefits">
+              <div class="container">
+                <p class="rail">Условия</p>
+                <h2>Что входит в прокат</h2>
+                <ul class="plain">
+                  <li><b>Залог возвращаем при сдаче.</b> Сумма зависит от класса машины и не входит в стоимость аренды.</li>
+                  <li><b>Осмотр по листу с подписью.</b> Царапины фиксируем на схеме до выезда, спорить на сдаче не о чем.</li>
+                  <li><b>Бак полный на выдаче.</b> Возвращаете так же — доплат за топливо нет.</li>
+                  <li><b>Отмена бесплатно за сутки.</b> Позже — удерживаем стоимость одних суток.</li>
+                </ul>
+              </div>
+            </section>
+
+            <!-- HowSection (paper) -->
+            <section class="section" id="how">
+              <div class="container">
+                <p class="rail">Порядок</p>
+                <h2>Как арендовать</h2>
+                <ol class="steps">
+                  <li>
+                    <h3>Выберите машину</h3>
+                    <p>Класс, коробка и число мест указаны в автопарке рядом с ценой за сутки.</p>
+                  </li>
+                  <li>
+                    <h3>Назовите срок</h3>
+                    <p>От одних до тридцати суток. От семи суток цена за сутки снижается.</p>
+                  </li>
+                  <li>
+                    <h3>Подпишите лист осмотра</h3>
+                    <p>Права, паспорт, залог — и ключи ваши. На оформление уходит четверть часа.</p>
+                  </li>
+                </ol>
+              </div>
+            </section>
+
+            <!-- FaqSection (paper) -->
+            <section class="section" id="faq">
+              <div class="container">
+                <p class="rail">Вопросы</p>
+                <h2>Что спрашивают чаще всего</h2>
+                <div class="faq">
+                  <details open>
+                    <summary>Какой нужен стаж?</summary>
+                    <p>Два года и возраст от 21 года. Для класса «бизнес» — три года и от 25 лет.</p>
+                  </details>
+                  <details>
+                    <summary>Когда вернётся залог?</summary>
+                    <p>В день сдачи машины, после осмотра по листу. Если повреждений нет, удержаний тоже нет.</p>
+                  </details>
+                  <details>
+                    <summary>Можно выехать за город?</summary>
+                    <p>Да, пробег не ограничен. За пределы области — предупредите при оформлении.</p>
+                  </details>
+                  <details>
+                    <summary>Кто платит за штрафы?</summary>
+                    <p>Арендатор. Присылаем копию постановления и ссылку на оплату в день получения.</p>
+                  </details>
+                </div>
+                <p class="caption">FAQ — нативные <code>details/summary</code>, раскрытие с клавиатуры (Enter/Space) без JS.</p>
+              </div>
+            </section>
+
+            <!-- SiteFooter (тёмный) + ContactsSection -->
+            <footer class="surface-night section">
+              <div class="container">
+                <section id="contacts">
+                  <p class="rail">Контакты</p>
+                  <h2>Связаться с прокатом</h2>
+                  <dl class="contacts">
+                    <dt>Телефон</dt>
+                    <dd><a href="tel:+70000000000">+7 000 000-00-00</a></dd>
+                    <dt>Почта</dt>
+                    <dd><a href="mailto:hello@example.com">hello@example.com</a></dd>
+                    <dt>Выдача машин</dt>
+                    <dd>Ежедневно с 8:00 до 22:00, по предварительной записи</dd>
+                  </dl>
+                  <p class="disclaimer">AutoDrive — учебный пример. Машины, цены и контакты вымышленные.</p>
+                </section>
+              </div>
+            </footer>
+          </div>
+          <p class="caption">
+            Тёмные <code>SiteHeader</code> + <code>HeroSection</code> — единая сцена без разрыва;
+            <code>SiteFooter</code> — тёмная полоса снизу, внутри него <code>#contacts</code>.
+            Ровно один <code>h1</code> на странице — в hero.
+          </p>
+        </section>
+        <!-- ============ 2. АВТОПАРК (#fleet, §5.3) ============ -->
+        <section class="screen" id="s-fleet" aria-label="Автопарк">
+          <div class="frame">
+            <div class="frame__bar"><span>1280px · #fleet (paper)</span><span>§5.3</span></div>
+            <section class="section" id="fleet">
+              <div class="container">
+                <p class="rail">Автопарк</p>
+                <h2>Восемь машин, цена за сутки</h2>
+                <p class="section__note">
+                  Нажмите «Рассчитать» у машины — отметим её как выбранную для расчёта срока.
+                </p>
+                <div class="fleet-filter">
+                  <div class="field">
+                    <label class="label" for="fleet-filter-class">Класс</label>
+                    <select class="select" id="fleet-filter-class" name="car-class">
+                      <option value="any" selected>Любой класс</option>
+                      <option value="economy">эконом</option>
+                      <option value="comfort">комфорт</option>
+                      <option value="business">бизнес</option>
+                      <option value="suv">внедорожник</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="label" for="fleet-filter-gearbox">Коробка</label>
+                    <select class="select" id="fleet-filter-gearbox" name="gearbox">
+                      <option value="any" selected>Любая коробка</option>
+                      <option value="manual">механика</option>
+                      <option value="automatic">автомат</option>
+                    </select>
+                  </div>
+                  <p class="fleet-filter__count" id="fleet-count" role="status">Показано 8 из 8</p>
+                </div>
+
+                <div class="fleet-grid" id="fleet-list">
+                  <article class="car card hover-glow" data-car-id="larus-16">
+                    <h3>Ларус 1.6</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>эконом</dd>
+                      <dt>Коробка</dt><dd>механика</dd>
+                      <dt>Салон</dt><dd>5 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">2 400 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="larus-16">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="korda-mini" data-chosen="true">
+                    <h3>Корда Мини <span class="badge">Выбрана</span></h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>эконом</dd>
+                      <dt>Коробка</dt><dd>автомат</dd>
+                      <dt>Салон</dt><dd>4 места</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">2 900 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="korda-mini">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="mirta-20">
+                    <h3>Мирта 2.0</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>комфорт</dd>
+                      <dt>Коробка</dt><dd>автомат</dd>
+                      <dt>Салон</dt><dd>5 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">3 800 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="mirta-20">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="silta-universal">
+                    <h3>Сильта Универсал</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>комфорт</dd>
+                      <dt>Коробка</dt><dd>механика</dd>
+                      <dt>Салон</dt><dd>5 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">3 500 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="silta-universal">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="prima-sedan">
+                    <h3>Прима Седан</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>бизнес</dd>
+                      <dt>Коробка</dt><dd>автомат</dd>
+                      <dt>Салон</dt><dd>5 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">7 200 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="prima-sedan">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="prima-long">
+                    <h3>Прима Лонг</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>бизнес</dd>
+                      <dt>Коробка</dt><dd>автомат</dd>
+                      <dt>Салон</dt><dd>4 места</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">9 100 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="prima-long">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="nordkap-4x4">
+                    <h3>Нордкап 4×4</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>внедорожник</dd>
+                      <dt>Коробка</dt><dd>автомат</dd>
+                      <dt>Салон</dt><dd>5 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">4 900 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="nordkap-4x4">Рассчитать</button>
+                  </article>
+
+                  <article class="car card hover-glow" data-car-id="taiga-lift">
+                    <h3>Тайга Лифт</h3>
+                    <dl class="car__meta">
+                      <dt>Класс</dt><dd>внедорожник</dd>
+                      <dt>Коробка</dt><dd>механика</dd>
+                      <dt>Салон</dt><dd>7 мест</dd>
+                      <dt>Цена за сутки</dt><dd class="car__price">4 300 ₽ / сут</dd>
+                    </dl>
+                    <button class="btn btn--primary btn--sm" type="button" data-calc-for="taiga-lift">Рассчитать</button>
+                  </article>
+                </div>
+                <p class="fleet__status" id="fleet-status" role="status">Выбрана Корда Мини — 2 900 ₽ за сутки.</p>
+              </div>
+            </section>
+          </div>
+          <div class="note">
+            <b>Цены и поля — из <code>src/cars.js</code></b> (Корда Мини 2 900 ₽/сут, эконом, автомат,
+            4 места). «Салон» — <code>seatsLabel()</code>: 4 места / 5 мест / 7 мест. Счётчик —
+            <code>countLabel()</code> → «Показано N из M». Все восемь карточек идут в порядке автопарка.
+          </div>
+          <div class="note">
+            <b>Пустой результат фильтра:</b> вместо карточек —
+            <span class="tag">.fleet__empty</span> «Под эти условия машин нет — выберите «Любой
+            класс» или «Любая коробка»» (<code>EMPTY_MESSAGE</code> из <code>src/filter.js</code>)
+            и счётчик «Показано 0 из 8». <code>.fleet__head</code> не рендерится (карточная
+            раскладка, §10). Выбранная карточка: <code>border --ink</code> +
+            <code>outline 2px --signal</code>, выбор дублируется текстом в
+            <code>#fleet-status</code>. Клик «Рассчитать» → <code>chooseCar(id)</code>, скролл к
+            <code>#calculator</code>, фокус на <code>#calc-car</code>.
+          </div>
+        </section>
+
+        <!-- ============ 3. РАСЧЁТ (#calculator, §5.4 + Receipt §4.1.1) ============ -->
+        <section class="screen" id="s-calc" aria-label="Расчёт">
+          <div class="frame">
+            <div class="frame__bar"><span>1280px · #calculator (paper)</span><span>§5.4 / §4.1.1</span></div>
+            <section class="section" id="calculator">
+              <div class="container">
+                <p class="rail">Расчёт</p>
+                <h2>Сколько выйдет аренда</h2>
+                <p class="section__note">
+                  Срок — от 1 до 30 суток. От 7 суток скидка 10 %, от 14 суток — 15 %. Залог считаем
+                  отдельно: он возвращается при сдаче и в итог не входит.
+                </p>
+                <form id="calc-form" novalidate>
+                  <div class="fleet-filter">
+                    <div class="field">
+                      <label class="label" for="calc-car">Автомобиль</label>
+                      <select class="select" id="calc-car" name="car">
+                        <option value="larus-16">Ларус 1.6 — 2 400 ₽ / сут</option>
+                        <option value="korda-mini" selected>Корда Мини — 2 900 ₽ / сут</option>
+                        <option value="mirta-20">Мирта 2.0 — 3 800 ₽ / сут</option>
+                        <option value="silta-universal">Сильта Универсал — 3 500 ₽ / сут</option>
+                        <option value="prima-sedan">Прима Седан — 7 200 ₽ / сут</option>
+                        <option value="prima-long">Прима Лонг — 9 100 ₽ / сут</option>
+                        <option value="nordkap-4x4">Нордкап 4×4 — 4 900 ₽ / сут</option>
+                        <option value="taiga-lift">Тайга Лифт — 4 300 ₽ / сут</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="label" for="calc-days">Срок, суток</label>
+                      <input
+                        class="input"
+                        id="calc-days"
+                        name="days"
+                        type="number"
+                        inputmode="numeric"
+                        min="1"
+                        max="30"
+                        step="1"
+                        value="7"
+                        aria-describedby="calc-error"
+                      />
+                      <p class="field__error" id="calc-error" role="alert"></p>
+                    </div>
+                  </div>
+
+                  <fieldset id="calc-extras">
+                    <legend class="label">Опции</legend>
+                    <label class="checkbox">
+                      <input type="checkbox" name="extras" value="child-seat" />
+                      <span>Детское кресло <span class="checkbox__hint">300 ₽ / сут</span></span>
+                    </label>
+                    <label class="checkbox">
+                      <input type="checkbox" name="extras" value="extra-driver" checked />
+                      <span>Второй водитель <span class="checkbox__hint">500 ₽ / сут</span></span>
+                    </label>
+                    <label class="checkbox">
+                      <input type="checkbox" name="extras" value="full-insurance" checked />
+                      <span>Полная страховка <span class="checkbox__hint">15 % от стоимости после скидки</span></span>
+                    </label>
+                  </fieldset>
+
+                  <button class="btn btn--primary" type="submit">Рассчитать стоимость</button>
+
+                  <div class="card" id="calc-result" style="max-width: 520px; margin-top: var(--space-2)">
+                    <dl class="receipt">
+                      <div class="receipt__row"><dt class="receipt__label">Аренда Корда Мини, 7 сут.</dt><dd class="receipt__value">20 300 ₽</dd></div>
+                      <div class="receipt__row"><dt class="receipt__label">Скидка за срок, 10 %</dt><dd class="receipt__value">−2 030 ₽</dd></div>
+                      <div class="receipt__row"><dt class="receipt__label">Опции, 7 сут.</dt><dd class="receipt__value">3 500 ₽</dd></div>
+                      <div class="receipt__row"><dt class="receipt__label">Полная страховка</dt><dd class="receipt__value">2 741 ₽</dd></div>
+                      <div class="receipt__row receipt__row--total"><dt class="receipt__label">Итого к оплате</dt><dd class="receipt__value">24 511 ₽</dd></div>
+                      <div class="receipt__row receipt__row--deposit"><dt class="receipt__label">Залог, вернём при сдаче</dt><dd class="receipt__value">10 000 ₽</dd></div>
+                    </dl>
+                  </div>
+                </form>
+              </div>
+            </section>
+          </div>
+          <div class="note">
+            <b>Чек — общий <code>&lt;Receipt&gt;</code> (§4.1.1)</b>, строки
+            <code>calcReceiptRows()</code>. Суммы посчитаны <code>calculateRental()</code> из
+            <code>src/calc.js</code>: база 2 900×7 = 20 300; скидка 10 % = 2 030; опции
+            (второй водитель 500×7) = 3 500; полная страховка 15 % от (20 300−2 030) = 2 741;
+            итого 24 511; залог «эконом» = 10 000. Формат — <code>formatPrice</code>, цифры
+            <code>tabular-nums</code>.
+          </div>
+          <div class="note">
+            <b>Ошибка срока:</b> пустое поле → «Укажите срок аренды — целое число суток от 1 до
+            30.»; 0/31 → текст <code>RangeError</code> «Срок аренды — целое число суток от 1 до
+            30. Получено: 31.». При ошибке итог не выводится, у поля
+            <code>aria-invalid="true"</code>, <code>#calc-error</code> с <code>role="alert"</code>
+            стоит под полем. <b>Инвариант R-01:</b> любой <code>input</code> в
+            <code>#calc-form</code> после расчёта → <code>resetEstimate()</code> (чек исчезает,
+            заявка → no-estimate); <code>change</code> у <code>#calc-car</code> →
+            <code>chooseCar(id)</code>.
+          </div>
+        </section>
+        <!-- ============ 4. ЗАЯВКА — НЕТ РАСЧЁТА (no-estimate, §6.1) ============ -->
+        <section class="screen" id="s-empty" aria-label="Заявка без расчёта">
+          <div class="frame">
+            <div class="frame__bar"><span>1280px · #booking[data-state=no-estimate]</span><span>§6.1</span></div>
+            <section class="section">
+              <div class="container">
+                <p class="rail">Заявка</p>
+                <h2>Заявка на бронирование</h2>
+                <p class="section__note">
+                  Срок и опции берём из расчёта выше. Цену сервер пересчитает сам и ответит номером
+                  заявки — платить и подтверждать ничего не нужно.
+                </p>
+                <form data-state="no-estimate" novalidate>
+                  <p class="card card--dashed" id="empty-booking-empty">
+                    <span id="empty-booking-empty-text">Сначала рассчитайте стоимость — срок и опции заявка берёт из расчёта.</span>
+                    <a class="btn btn--outline btn--sm" href="#calculator" id="empty-booking-empty-link">Перейти к расчёту</a>
+                  </p>
+                  <div class="booking__fields fleet-filter">
+                    <div class="field">
+                      <label class="label" for="empty-booking-name">Имя</label>
+                      <input class="input" id="empty-booking-name" name="name" type="text" autocomplete="name" maxlength="60" required disabled aria-describedby="empty-booking-name-hint empty-booking-name-error" />
+                      <p class="field__hint" id="empty-booking-name-hint">Как к вам обращаться при подтверждении</p>
+                      <p class="field__error" id="empty-booking-name-error" role="alert"></p>
+                    </div>
+                    <div class="field">
+                      <label class="label" for="empty-booking-phone">Телефон</label>
+                      <input class="input" id="empty-booking-phone" name="phone" type="tel" autocomplete="tel" required disabled aria-describedby="empty-booking-phone-hint empty-booking-phone-error" />
+                      <p class="field__hint" id="empty-booking-phone-hint">Для подтверждения брони. Образец: +7 000 000-00-00</p>
+                      <p class="field__error" id="empty-booking-phone-error" role="alert"></p>
+                    </div>
+                    <div class="field">
+                      <label class="label" for="empty-booking-date">Дата начала аренды</label>
+                      <input class="input" id="empty-booking-date" name="startDate" type="date" required disabled aria-describedby="empty-booking-date-hint empty-booking-date-error" />
+                      <p class="field__hint" id="empty-booking-date-hint">Выдача машины в день начала аренды</p>
+                      <p class="field__error" id="empty-booking-date-error" role="alert"></p>
+                    </div>
+                  </div>
+                  <p class="required-note">* — обязательное поле</p>
+                  <p class="field__error" id="empty-booking-message"></p>
+                  <button class="btn btn--primary" type="submit" id="empty-booking-submit" disabled>Отправить заявку</button>
+                  <p class="caption" id="empty-booking-status" role="status"></p>
+                </form>
+              </div>
+            </section>
+          </div>
+          <div class="note">
+            <b>«Нет расчёта» — реально <code>disabled</code>:</b> у всех трёх полей и у кнопки стоит
+            атрибут <code>disabled</code>, поэтому они недоступны и для мыши, и для Tab-обхода, а
+            форма не может уйти без цены (инвариант R-01). Пустая панель
+            <code>#booking-empty</code> с пунктирной рамкой и ссылкой
+            <code>#booking-empty-link → #calculator</code>. Значения полей при переходах
+            сохраняются. Канонические селекторы: <code>#booking-form[data-state=no-estimate]</code>,
+            <code>#booking-name</code>, <code>#booking-submit</code> (здесь — с префиксом
+            <code>empty-</code>, чтобы id не дублировались между экранами).
+          </div>
+        </section>
+
+        <!-- ============ 5. ЗАЯВКА — ЗАПОЛНЕНИЕ (editing) + 360px ============ -->
+        <section class="screen" id="s-form" aria-label="Заполнение заявки и узкий экран">
+          <div class="frame">
+            <div class="frame__bar"><span>1280px · #booking[data-state=editing]</span><span>§5.5 / §6.1 / §9</span></div>
+            <section class="section" id="booking">
+              <div class="container">
+                <p class="rail" id="booking-rail">Заявка</p>
+                <h2 id="booking-heading">Заявка на бронирование</h2>
+                <p class="section__note" id="booking-note">
+                  Срок и опции берём из расчёта выше. Цену сервер пересчитает сам и ответит номером
+                  заявки — платить и подтверждать ничего не нужно.
+                </p>
+                <noscript>
+                  <p class="field__error" role="alert">
+                    Для отправки заявки нужен включённый JavaScript. Цены в автопарке и контакты
+                    доступны без него.
+                  </p>
+                </noscript>
+                <form id="booking-form" data-state="editing" novalidate>
+                  <div class="card" id="booking-snapshot" style="max-width: 520px; margin-bottom: var(--space-2)">
+                    <h3>Из расчёта выше</h3>
+                    <dl class="receipt">
+                      <div class="receipt__row"><dt class="receipt__label">Машина</dt><dd class="receipt__value">Корда Мини</dd></div>
+                      <div class="receipt__row"><dt class="receipt__label">Срок</dt><dd class="receipt__value">7 сут.</dd></div>
+                      <div class="receipt__row"><dt class="receipt__label">Опции</dt><dd class="receipt__value">Второй водитель, Полная страховка</dd></div>
+                      <div class="receipt__row receipt__row--total"><dt class="receipt__label">Итого</dt><dd class="receipt__value">24 511 ₽</dd></div>
+                    </dl>
+                  </div>
+
+                  <div class="booking__fields fleet-filter">
+                    <div class="field">
+                      <label class="label" for="booking-name" id="booking-name-label">Имя</label>
+                      <input class="input focus-demo" id="booking-name" name="name" type="text" autocomplete="name" maxlength="60" required value="Алекс Примеров" aria-describedby="booking-name-hint booking-name-error" />
+                      <p class="field__hint" id="booking-name-hint">Как к вам обращаться при подтверждении</p>
+                      <p class="field__error" id="booking-name-error" role="alert"></p>
+                    </div>
+                    <div class="field">
+                      <label class="label" for="booking-phone" id="booking-phone-label">Телефон</label>
+                      <input class="input" id="booking-phone" name="phone" type="tel" autocomplete="tel" required value="+7 000 123-45-67" aria-describedby="booking-phone-hint booking-phone-error" />
+                      <p class="field__hint" id="booking-phone-hint">Для подтверждения брони. Образец: +7 000 000-00-00</p>
+                      <p class="field__error" id="booking-phone-error" role="alert"></p>
+                    </div>
+                    <div class="field">
+                      <label class="label" for="booking-date" id="booking-date-label">Дата начала аренды</label>
+                      <input class="input" id="booking-date" name="startDate" type="date" required value="2027-01-30" aria-describedby="booking-date-hint booking-date-error" />
+                      <p class="field__hint" id="booking-date-hint">Выдача машины в день начала аренды</p>
+                      <p class="field__error" id="booking-date-error" role="alert"></p>
+                    </div>
+                  </div>
+                  <p class="required-note" id="booking-required">* — обязательное поле</p>
+                  <p class="field__error" id="booking-message"></p>
+                  <button class="btn btn--primary" type="submit" id="booking-submit" aria-busy="false">Отправить заявку</button>
+                  <p class="caption" id="booking-status" role="status"></p>
+                  <div class="card" id="booking-result" hidden></div>
+                </form>
+              </div>
+            </section>
+          </div>
+          <div class="note">
+            <b>editing</b> — снимок расчёта виден (<code>snapshotReceiptRows</code>: «Машина»,
+            «Срок», «Опции», «Итого»), поля enabled. На <code>#booking-name</code> показан
+            <b>двойной индикатор фокуса</b> (§9): <code>outline 2px --ink</code> (12.72:1) + жёлтое
+            кольцо <code>box-shadow 0 0 0 3px --signal</code>; одиночная жёлтая обводка на светлом
+            запрещена (1.64:1). Подписи — только «Имя/Телефон/Дата начала аренды»
+            (<code>BOOKING_TEXT.labels</code>), звёздочка вынесена в
+            <code>#booking-required</code>. <code>min/max</code> у даты не прошиты в разметке —
+            ставятся из <code>todayUtc()</code> и <code>BOOKING_HORIZON_DAYS</code>.
+          </div>
+
+          <!-- 360px: тот же editing, одна колонка -->
+          <div class="frame frame--360">
+            <div class="frame__bar"><span>360px · #booking[data-state=editing]</span><span>§9</span></div>
+            <section class="section">
+              <div class="container">
+                <p class="rail">Заявка</p>
+                <h2 style="font-size: 1.25rem">Заявка на бронирование</h2>
+                <div class="card" style="margin-bottom: var(--space-2)">
+                  <dl class="receipt">
+                    <div class="receipt__row"><dt class="receipt__label">Машина</dt><dd class="receipt__value">Корда Мини</dd></div>
+                    <div class="receipt__row"><dt class="receipt__label">Срок</dt><dd class="receipt__value">7 сут.</dd></div>
+                    <div class="receipt__row receipt__row--total"><dt class="receipt__label">Итого</dt><dd class="receipt__value">24 511 ₽</dd></div>
+                  </dl>
+                </div>
+                <div class="field">
+                  <label class="label" for="m360-booking-name">Имя</label>
+                  <input class="input" id="m360-booking-name" type="text" value="Алекс Примеров" />
+                </div>
+                <div class="field">
+                  <label class="label" for="m360-booking-phone">Телефон</label>
+                  <input class="input" id="m360-booking-phone" type="tel" value="+7 000 123-45-67" />
+                </div>
+                <div class="field">
+                  <label class="label" for="m360-booking-date">Дата начала аренды</label>
+                  <input class="input" id="m360-booking-date" type="date" value="2027-01-30" />
+                </div>
+                <p class="required-note">* — обязательное поле</p>
+                <button class="btn btn--primary btn--block" type="submit">Отправить заявку</button>
+              </div>
+            </section>
+          </div>
+          <p class="caption">
+            <b>360px (§9):</b> контентная ширина 328px, карточка снимка и поля — в одну колонку,
+            кнопка <code>#booking-submit</code> на всю ширину и остаётся достижимой,
+            горизонтального скролла нет (допуск ≤ 1px). Весь сценарий проходится с клавиатуры.
+          </p>
+        </section>
+        <!-- ============ 6. ЗАЯВКА — ОШИБКИ ВВОДА (editing + ошибки полей) ============ -->
+        <section class="screen" id="s-errors" aria-label="Ошибки ввода">
+          <div class="frame">
+            <div class="frame__bar"><span>1280px · #booking[data-state=editing] + ошибки</span><span>§6.2 / §7 / §9</span></div>
+            <section class="section">
+              <div class="container">
+                <p class="rail">Заявка</p>
+                <h2>Заявка на бронирование</h2>
+                <form data-state="editing" novalidate>
+                  <div class="booking__fields fleet-filter">
+                    <div class="field">
+                      <label class="label" for="err-booking-name">Имя</label>
+                      <input class="input" id="err-booking-name" type="text" value="" aria-invalid="true" aria-describedby="err-booking-name-hint err-booking-name-error" />
+                      <p class="field__hint" id="err-booking-name-hint">Как к вам обращаться при подтверждении</p>
+                      <p class="field__error" id="err-booking-name-error" role="alert">Укажите имя — так мы обратимся к вам при подтверждении.</p>
+                    </div>
+                    <div class="field">
+                      <label class="label" for="err-booking-phone">Телефон</label>
+                      <input class="input" id="err-booking-phone" type="tel" value="123" aria-invalid="true" aria-describedby="err-booking-phone-hint err-booking-phone-error" />
+                      <p class="field__hint" id="err-booking-phone-hint">Для подтверждения брони. Образец: +7 000 000-00-00</p>
+                      <p class="field__error" id="err-booking-phone-error" role="alert">Телефон должен содержать 11 цифр, например +7 000 000-00-00.</p>
+                    </div>
+                    <div class="field">
+                      <label class="label" for="err-booking-date">Дата начала аренды</label>
+                      <input class="input" id="err-booking-date" type="date" value="" aria-invalid="true" aria-describedby="err-booking-date-hint err-booking-date-error" />
+                      <p class="field__hint" id="err-booking-date-hint">Выдача машины в день начала аренды</p>
+                      <p class="field__error" id="err-booking-date-error" role="alert">Выберите дату начала аренды.</p>
+                    </div>
+                  </div>
+                  <p class="required-note">* — обязательное поле</p>
+                  <button class="btn btn--primary" type="submit">Отправить заявку</button>
+                </form>
+              </div>
+            </section>
+          </div>
+          <div class="note">
+            <b>Ошибки — признак <code>editing</code>, не отдельное состояние.</b> У каждой области
+            <code>role="alert"</code>, у поля <code>aria-invalid="true"</code> (граница
+            <code>--destructive</code>, на paper = <code>--stamp</code>), связь
+            <code>aria-describedby="…-hint …-error"</code>. Ошибка стоит сразу под своим полем.
+            Проверка — <code>checkDraft()</code> до сети: <b>запрос не уходит</b>. Фокус — на
+            первом ошибочном поле (имя → телефон → дата), форма встряхивается
+            (<code>shake</code> 240ms). Правка поля снимает ошибку только этого поля.
+          </div>
+          <div class="note">
+            <b>Другие тексты каталога</b> (<code>errorView</code> из
+            <code>src/booking-text.js</code>, источник — booking-contract §7): «Имя слишком
+            короткое — не меньше 2 символов.» / «Имя — только буквы, пробел, дефис и апостроф.»;
+            «Дата начала не может быть в прошлом — выберите сегодня или позже.»; «Дата начала не
+            дальше 365 дней от сегодня.». Все строки заявки — только из
+            <code>BOOKING_TEXT</code>/<code>errorView</code>, своих формулировок в разметке нет.
+          </div>
+        </section>
+
+        <!-- ============ 7. ЗАЯВКА — ОТПРАВКА (submitting) ============ -->
+        <section class="screen" id="s-loading" aria-label="Отправка заявки">
+          <div class="frame">
+            <div class="frame__bar"><span>1280px · #booking[data-state=submitting]</span><span>§6.1 / §8</span></div>
+            <section class="section">
+              <div class="container">
+                <p class="rail">Заявка</p>
+                <h2>Заявка на бронирование</h2>
+                <form data-state="submitting" novalidate>
+                  <div class="card" style="max-width: 520px; margin-bottom: var(--space-2)">
+                    <dl class="receipt">
+                      <div class="receipt__row"><dt class="receipt__label">Машина</dt><dd class="receipt__value">Корда Мини</dd></div>
+                      <div class="receipt__row"><dt class="receipt__label">Срок</dt><dd class="receipt__value">7 сут.</dd></div>
+                      <div class="receipt__row receipt__row--total"><dt class="receipt__label">Итого</dt><dd class="receipt__value">24 511 ₽</dd></div>
+                    </dl>
+                  </div>
+                  <div class="booking__fields fleet-filter">
+                    <div class="field">
+                      <label class="label" for="load-booking-name">Имя</label>
+                      <input class="input" id="load-booking-name" type="text" value="Алекс Примеров" disabled />
+                    </div>
+                    <div class="field">
+                      <label class="label" for="load-booking-phone">Телефон</label>
+                      <input class="input" id="load-booking-phone" type="tel" value="+7 000 123-45-67" disabled />
+                    </div>
+                    <div class="field">
+                      <label class="label" for="load-booking-date">Дата начала аренды</label>
+                      <input class="input" id="load-booking-date" type="date" value="2027-01-30" disabled />
+                    </div>
+                  </div>
+                  <p class="required-note">* — обязательное поле</p>
+                  <button class="btn btn--primary" type="submit" id="load-booking-submit" disabled aria-busy="true">
+                    <span class="spinner" id="load-booking-spinner" aria-hidden="true"></span>
+                    Отправляем заявку…
+                  </button>
+                  <p class="caption" role="status">Отправляем заявку…</p>
+                </form>
+              </div>
+            </section>
+          </div>
+          <div class="note">
+            <b>submitting</b> — поля <code>disabled</code>, кнопка <code>disabled</code> +
+            <code>aria-busy="true"</code> + спиннер <code>#booking-spinner</code>
+            (<code>aria-hidden</code>, поворот 700ms). Подпись и <code>#booking-status</code> —
+            «Отправляем заявку…». <b>Защита от повтора (§8):</b> синхронный guard
+            <code>inFlight</code> до первого <code>await</code> + <code>disabled</code> — клик,
+            Enter и <code>requestSubmit()</code> дают ровно один запрос. Таймаут 10с →
+            <code>unavailable</code>.
+          </div>
+        </section>
+
+        <!-- ============ 8. ЗАЯВКА — УСПЕХ (success + штамп) ============ -->
+        <section class="screen" id="s-success" aria-label="Успех">
+          <div class="frame">
+            <div class="frame__bar"><span>1280px · #booking[data-state=success]</span><span>§3.3 / §5.5 / §6.1</span></div>
+            <section class="section">
+              <div class="container">
+                <p class="rail">Заявка</p>
+                <h2>Заявка на бронирование</h2>
+                <form data-state="success" novalidate>
+                  <!-- .booking__fields и #booking-required скрыты в success -->
+                  <div class="card" id="ok-booking-result" style="max-width: 520px">
+                    <div class="success-stamp">
+                      <span>Заявка принята</span>
+                      <strong>AD-0042</strong>
+                    </div>
+                    <dl class="receipt">
+                      <div class="receipt__row"><dt class="receipt__label">Номер заявки</dt><dd class="receipt__value">AD-0042</dd></div>
+                      <div class="receipt__row"><dt class="receipt__label">Машина</dt><dd class="receipt__value">Корда Мини</dd></div>
+                      <div class="receipt__row"><dt class="receipt__label">Дата начала</dt><dd class="receipt__value">30.01.2027</dd></div>
+                      <div class="receipt__row"><dt class="receipt__label">Срок</dt><dd class="receipt__value">7 сут.</dd></div>
+                      <div class="receipt__row receipt__row--total"><dt class="receipt__label">Итого</dt><dd class="receipt__value">24 511 ₽</dd></div>
+                    </dl>
+                    <hr class="separator" />
+                    <button class="btn btn--outline" type="button" id="ok-booking-again">Оформить ещё одну заявку</button>
+                  </div>
+                  <p class="caption" role="status">Заявка № AD-0042 принята.</p>
+                </form>
+              </div>
+            </section>
+          </div>
+          <div class="note">
+            <b>success</b> — форма заменена подтверждением. Штамп <code>.success-stamp</code>
+            (рамка и текст <code>--stamp</code>, <code>--font-mono</code>, uppercase) в финальном
+            кадре <code>rotate(-3deg)</code> (§3.3) — тот же кадр при reduced-motion. Чек —
+            <code>confirmationReceiptRows</code>: «Номер заявки», «Машина», «Дата начала»
+            (<code>formatDate</code>), «Срок», «Итого». Номер из ответа 201; заявка читается по
+            <code>GET /api/bookings/AD-0042</code>. <b>Телефон в подтверждении не
+            показывается.</b> Если <code>price.total</code> разошёлся со снимком — абзац
+            коррекции «Итог уточнён сервером: было …, стало …». Кнопка
+            <code>#booking-again</code> → <code>resetEstimate()</code> + очистка полей →
+            no-estimate.
+          </div>
+        </section>
+
+        <!-- ============ 9. ЗАЯВКА — ОШИБКА СЕРВЕРА (unavailable + 409) ============ -->
+        <section class="screen" id="s-server" aria-label="Ошибка сервера">
+          <div class="frame">
+            <div class="frame__bar"><span>1280px · A: unavailable · B: 409 date_conflict</span><span>§6.2 / §7</span></div>
+            <section class="section">
+              <div class="container">
+                <p class="rail">Заявка · вариант A — сервер недоступен (5xx / таймаут)</p>
+                <h2>Заявка на бронирование</h2>
+                <form data-state="unavailable" novalidate>
+                  <div class="booking__fields fleet-filter">
+                    <div class="field">
+                      <label class="label" for="fail-booking-name">Имя</label>
+                      <input class="input" id="fail-booking-name" type="text" value="Алекс Примеров" />
+                    </div>
+                    <div class="field">
+                      <label class="label" for="fail-booking-phone">Телефон</label>
+                      <input class="input" id="fail-booking-phone" type="tel" value="+7 000 123-45-67" />
+                    </div>
+                    <div class="field">
+                      <label class="label" for="fail-booking-date">Дата начала аренды</label>
+                      <input class="input" id="fail-booking-date" type="date" value="2027-01-30" />
+                    </div>
+                  </div>
+                  <p class="required-note">* — обязательное поле</p>
+                  <button class="btn btn--primary" type="submit">Отправить заявку</button>
+                  <p class="field__error" role="status">Заявка не отправлена — сервер не ответил. Проверьте связь и нажмите «Отправить заявку» ещё раз.</p>
+                </form>
+              </div>
+            </section>
+            <hr class="separator" />
+            <section class="section">
+              <div class="container">
+                <p class="rail">Заявка · вариант B — 409, дата занята</p>
+                <form data-state="editing" novalidate>
+                  <div class="booking__fields fleet-filter">
+                    <div class="field">
+                      <label class="label" for="fail409-booking-name">Имя</label>
+                      <input class="input" id="fail409-booking-name" type="text" value="Алекс Примеров" />
+                    </div>
+                    <div class="field">
+                      <label class="label" for="fail409-booking-phone">Телефон</label>
+                      <input class="input" id="fail409-booking-phone" type="tel" value="+7 000 123-45-67" />
+                    </div>
+                    <div class="field">
+                      <label class="label" for="fail409-booking-date">Дата начала аренды</label>
+                      <input class="input" id="fail409-booking-date" type="date" value="2027-01-30" aria-invalid="true" aria-describedby="fail409-booking-date-error" />
+                      <p class="field__error" id="fail409-booking-date-error" role="alert">Эта машина занята с 28.01.2027 по 04.02.2027. Выберите другую дату начала или другую машину.</p>
+                    </div>
+                  </div>
+                  <p class="required-note">* — обязательное поле</p>
+                  <button class="btn btn--primary" type="submit">Отправить заявку</button>
+                </form>
+              </div>
+            </section>
+          </div>
+          <div class="note">
+            <b>A — 5xx / <code>internal_error</code> / таймаут 10с / разрыв сети →
+            <code>unavailable</code>:</b> текст в <code>#booking-status</code>
+            (<code>BOOKING_TEXT.unavailable</code>), черновик сохранён, кнопка снова активна,
+            повтор — новый запрос (серверная идемпотентность отдаёт 200). <b>B — 409
+            <code>date_conflict</code> → <code>editing</code>:</b> ошибка у
+            <code>#booking-date</code> через <code>conflictText()</code> (последний занятый день —
+            <code>addDays(endDate, −1)</code>), фокус на дату.
+          </div>
+          <div class="note">
+            <b>Прочие отказы:</b> нераспознанный код/поле и транспортные 4xx →
+            <code>editing</code> + <code>#booking-message</code> = «Заявка не принята. Проверьте
+            поля и отправьте ещё раз.» (<code>rejected</code>). Ошибки по снимку
+            (<code>carId</code>/<code>days</code>/<code>extras</code>) →
+            <code>no-estimate</code> + «Расчёт устарел — пересчитайте стоимость в калькуляторе.»
+            (<code>stale</code>). Серверные <code>message</code> в UI не показываются — только
+            тексты из <code>src/booking-text.js</code>.
+          </div>
+        </section>
+        <!-- ============ 10. ДВИЖЕНИЕ (motion-язык §3): статичные кадры ============ -->
+        <section class="screen" id="s-motion" aria-label="Движение">
+          <div class="frame">
+            <div class="frame__bar"><span>Кадры паттернов · тайминги из §3</span><span>§2.6 / §3.1–3.6</span></div>
+            <div class="container section">
+              <p class="rail">Движение</p>
+              <h2>Пять паттернов и детерминированный финал</h2>
+              <p class="section__note">
+                Анимируются только <code>transform</code>, <code>opacity</code>,
+                <code>stroke-dashoffset</code>, <code>border-color</code>, <code>box-shadow</code>.
+                Базовые стили — уже финальный кадр, поэтому при
+                <code>prefers-reduced-motion: reduce</code> и на скриншотных тестах M6 кадр
+                совпадает с финалом обычного проигрывания. Здесь каждый паттерн показан
+                статичными кадрами.
+              </p>
+
+              <!-- stroke-draw -->
+              <h3>1. stroke-draw — blueprint-развёртка в hero (§3.2)</h3>
+              <div class="motion-frames">
+                <div class="motion-cell surface-night">
+                  <span class="tag" style="color: var(--on-night-2)">t=0 · пути скрыты</span>
+                  <svg class="hero__drawing" viewBox="0 0 640 230" role="img" aria-label="Кадр 0: контур ещё не нарисован">
+                    <g class="hero__lines">
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M22 172 L22 143 C22 135 28 130 36 129 L124 114 L192 64 C198 57 208 53 218 53 L398 53 C410 53 421 57 429 65 L484 114 L594 130 C606 132 614 140 614 150 L614 172 Z" />
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M214 68 L292 68 L292 110 L178 110 Z" />
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M308 68 L394 68 L428 110 L308 110 Z" />
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M300 112 L300 164" />
+                      <circle pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" cx="152" cy="172" r="38" />
+                      <circle pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" cx="482" cy="172" r="38" />
+                      <circle pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" cx="152" cy="172" r="15" />
+                      <circle pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" cx="482" cy="172" r="15" />
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M22 212 L614 212" />
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M22 204 L22 220" />
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M614 204 L614 220" />
+                    </g>
+                    <path class="hero__panel" style="opacity: 0" d="M196 114 L296 114 L296 164 L196 164 Z" />
+                  </svg>
+                  <span class="tag" style="color: var(--on-night-2)">stroke-dashoffset: 1 · panel opacity 0</span>
+                </div>
+                <div class="motion-cell surface-night">
+                  <span class="tag" style="color: var(--on-night-2)">t≈600ms · первые пути</span>
+                  <svg class="hero__drawing" viewBox="0 0 640 230" role="img" aria-label="Кадр середины: контур и стёкла нарисованы, колёса ещё нет">
+                    <g class="hero__lines">
+                      <path d="M22 172 L22 143 C22 135 28 130 36 129 L124 114 L192 64 C198 57 208 53 218 53 L398 53 C410 53 421 57 429 65 L484 114 L594 130 C606 132 614 140 614 150 L614 172 Z" />
+                      <path d="M214 68 L292 68 L292 110 L178 110 Z" />
+                      <path d="M308 68 L394 68 L428 110 L308 110 Z" />
+                      <path d="M300 112 L300 164" />
+                      <circle pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" cx="152" cy="172" r="38" />
+                      <circle pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" cx="482" cy="172" r="38" />
+                      <circle pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" cx="152" cy="172" r="15" />
+                      <circle pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" cx="482" cy="172" r="15" />
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M22 212 L614 212" />
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M22 204 L22 220" />
+                      <path pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: 1" d="M614 204 L614 220" />
+                    </g>
+                    <path class="hero__panel" style="opacity: 0" d="M196 114 L296 114 L296 164 L196 164 Z" />
+                  </svg>
+                  <span class="tag" style="color: var(--on-night-2)">stagger 90ms между путями</span>
+                </div>
+                <div class="motion-cell surface-night">
+                  <span class="tag" style="color: var(--on-night-2)">финал ≤2500ms · = reduce</span>
+                  <svg class="hero__drawing" viewBox="0 0 640 230" role="img" aria-label="Финальный кадр: контур виден целиком, дверь залита">
+                    <g class="hero__lines">
+                      <path d="M22 172 L22 143 C22 135 28 130 36 129 L124 114 L192 64 C198 57 208 53 218 53 L398 53 C410 53 421 57 429 65 L484 114 L594 130 C606 132 614 140 614 150 L614 172 Z" />
+                      <path d="M214 68 L292 68 L292 110 L178 110 Z" />
+                      <path d="M308 68 L394 68 L428 110 L308 110 Z" />
+                      <path d="M300 112 L300 164" />
+                      <circle cx="152" cy="172" r="38" />
+                      <circle cx="482" cy="172" r="38" />
+                      <circle cx="152" cy="172" r="15" />
+                      <circle cx="482" cy="172" r="15" />
+                      <path d="M22 212 L614 212" />
+                      <path d="M22 204 L22 220" />
+                      <path d="M614 204 L614 220" />
+                    </g>
+                    <path class="hero__panel" d="M196 114 L296 114 L296 164 L196 164 Z" />
+                  </svg>
+                  <span class="tag" style="color: var(--on-night-2)">stroke-dashoffset: 0 · panel opacity 1</span>
+                </div>
+              </div>
+              <p class="caption">
+                Каждый путь: <code>1200ms var(--ease-in-out)</code>, задержка
+                <code>index × 90ms</code>; <code>pathLength="1"</code>, замер длин не нужен. Заливка
+                двери: <code>400ms var(--ease-out)</code>, задержка
+                <code>(число путей − 1) × 90ms + 1200ms</code>. Контур — <code>--on-night-2</code>,
+                заливка — <code>--signal</code>. Intro hero целиком ≤ 2500ms; заголовок, подзаголовок
+                и CTA не анимируются и кликабельны с первого кадра. Параллакс
+                <code>data-parallax</code> — ≤ 24px, off при reduce и &lt; 768px.
+              </p>
+
+              <hr class="separator" />
+
+              <!-- reveal -->
+              <h3>2. reveal — появление секций и карточек (§3.1)</h3>
+              <div class="motion-frames">
+                <div class="motion-cell">
+                  <span class="tag">.is-pending</span>
+                  <div class="card reveal-pending"><h3>Карточка</h3><p class="caption">opacity 0 · translateY(16px)</p></div>
+                  <p class="caption">До входа во вьюпорт: <code>opacity: 0; transform: translateY(16px)</code> (класс ставится только из JS и только при no-preference).</p>
+                </div>
+                <div class="motion-cell">
+                  <span class="tag">.is-revealed · финал = reduce</span>
+                  <div class="card reveal-done"><h3>Карточка</h3><p class="caption">opacity 1 · transform none</p></div>
+                  <p class="caption">Финал: <code>opacity: 1; transform: none</code>. Этот же кадр — без JS и при reduced-motion.</p>
+                </div>
+                <div class="motion-cell">
+                  <span class="tag">stagger</span>
+                  <p class="caption">
+                    Переход <code>opacity</code> + <code>transform</code>:
+                    <code>480ms var(--ease-out)</code>. Задержка между элементами секции
+                    <code>index × 60ms</code>, максимум 6 ступеней (суммарно ≤ 300ms).
+                    IntersectionObserver <code>threshold: 0.2</code>, один раз на элемент.
+                    Live-регионы, ошибки, чек и подтверждение — без reveal (появляются мгновенно).
+                  </p>
+                </div>
+              </div>
+
+              <hr class="separator" />
+
+              <!-- stamp -->
+              <h3>3. stamp — штамп принятой заявки (§3.3)</h3>
+              <div class="motion-frames">
+                <div class="motion-cell">
+                  <span class="tag">начало</span>
+                  <div class="success-stamp stamp-start"><span>Заявка принята</span><strong>AD-0042</strong></div>
+                  <p class="caption">От <code>opacity: 0; transform: rotate(-8deg) scale(1.15)</code>.</p>
+                </div>
+                <div class="motion-cell">
+                  <span class="tag">финал = reduce</span>
+                  <div class="success-stamp"><span>Заявка принята</span><strong>AD-0042</strong></div>
+                  <p class="caption">К <code>opacity: 1; transform: rotate(-3deg) scale(1)</code>.</p>
+                </div>
+                <div class="motion-cell">
+                  <span class="tag">тайминг</span>
+                  <p class="caption">
+                    <code>360ms var(--ease-spring)</code>, один раз при переходе в
+                    <code>success</code>. Рамка <code>2px solid var(--stamp)</code>, текст
+                    <code>--stamp</code> (5.28:1 на paper), <code>--font-mono</code>, uppercase,
+                    радиус 2px. В потоке документа, строки чека не перекрывает; номер читаем и в
+                    финальном кадре.
+                  </p>
+                </div>
+              </div>
+
+              <hr class="separator" />
+
+              <!-- shake -->
+              <h3>4. shake — отклонённый сабмит (§3.4)</h3>
+              <div class="motion-cell">
+                <span class="tag">translateX по кадрам</span>
+                <div class="shake-track">
+                  <span class="badge">0</span>→<span class="badge">−6px</span>→<span class="badge">5px</span>→<span class="badge">−3px</span>→<span class="badge">0</span>
+                </div>
+                <p class="caption">
+                  <code>240ms var(--ease-in-out)</code>, класс <code>.is-shaking</code> на
+                  <code>#booking-form</code>/<code>#calc-form</code> только на неудачную попытку
+                  (валидация до сети, 400, 409), снимается по <code>animationend</code>. Финал
+                  <code>transform: none</code>; при reduce — только текст ошибки и
+                  <code>aria-invalid</code>, без движения. Фокус уже на первом ошибочном поле.
+                </p>
+              </div>
+
+              <hr class="separator" />
+
+              <!-- hover-glow -->
+              <h3>5. hover-glow — наведение на карточки и CTA (§3.5)</h3>
+              <div class="motion-frames">
+                <div class="motion-cell">
+                  <span class="tag">обычная карточка</span>
+                  <article class="car card"><h3>Корда Мини</h3><p class="car__price">2 900 ₽ / сут</p></article>
+                </div>
+                <div class="motion-cell">
+                  <span class="tag">:hover (статичный кадр)</span>
+                  <article class="car card is-hover-demo"><h3>Корда Мини</h3><p class="car__price">2 900 ₽ / сут</p></article>
+                </div>
+                <div class="motion-cell">
+                  <span class="tag">тайминг</span>
+                  <p class="caption">
+                    <code>160ms var(--ease-out)</code>; на карточке
+                    <code>translateY(-2px)</code> + <code>border-color: var(--signal)</code> +
+                    <code>box-shadow: var(--glow-signal)</code>; на primary-кнопках — только glow,
+                    без сдвига. Только <code>@media (hover: hover)</code> и не-disabled. При reduce —
+                    статичная смена рамки/тени, без transition.
+                  </p>
+                </div>
+              </div>
+
+              <div class="note">
+                <b>Motion-бюджет (§3.6):</b> ровно 5 паттернов + служебный спиннер
+                <code>submitting</code>; одновременно — одна секция (reveal со stagger ≤ 300ms) либо
+                hero-intro; длительность паттерна ≤ 1200ms, intro hero ≤ 2500ms; бесконечных циклов
+                нет, кроме спиннера. Скриншотные эталоны M6 снимаются с
+                <code>reducedMotion: 'reduce'</code> и стабильны между прогонами.
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+@import './tokens.css';
+@import './motion.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root h1,
+:root h2,
+:root h3 {
+  line-height: 1.2;
+  font-weight: 650;
+}
+
+:root h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+:root h2 {
+  font-size: 1.5rem;
+}
+
+:root h3 {
+  font-size: 1.05rem;
+}

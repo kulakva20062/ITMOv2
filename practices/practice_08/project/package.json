@@ -1,0 +1,33 @@
+{
+  "name": "autodrive-landing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "sh scripts/check.sh",
+    "test:ui": "playwright test",
+    "test:ui:report": "playwright show-report",
+    "start": "node server.js",
+    "web:dev": "vite web",
+    "web:build": "tsc --noEmit -p web/tsconfig.json && vite build web",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
+  }
+}

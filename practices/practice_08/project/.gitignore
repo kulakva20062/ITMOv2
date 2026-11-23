@@ -1,0 +1,9 @@
+# Зависимости и артефакты прогонов не попадают в репозиторий.
+node_modules/
+web/dist/
+# Корневой ignore практик наследит от Python и глушит lib/; web/src/lib — контрактный путь shadcn.
+!web/src/lib/
+!web/src/lib/**
+test-results/
+playwright-report/
+.run/
