@@ -1,4 +1,4 @@
-# just start — поднять сервер страницы AutoDrive (порт 8000).
+# just start — собрать и запустить AutoDrive (порт 8000).
 # Запуск из practices/practice_08 (justfile лежит здесь); сервер запускается
 # из подкаталога project/. Работает из любого состояния: уже запущенный server.js
 # (свой или запущенный вручную) останавливается и стартует свежее. Чужой процесс
@@ -12,7 +12,7 @@ project := dir + "/project"
 default: help
 
 help:
-    @echo "just start   — запустить http://127.0.0.1:{{port}}/ (уже запущенный server.js перезапускается)"
+    @echo "just start   — собрать фронтенд и запустить http://127.0.0.1:{{port}}/"
     @echo "just stop    — остановить server.js на порту {{port}} (чужие процессы не убивает)"
     @echo "just status  — показать, слушает ли кто-то порт"
     @echo "just logs    — последние строки журнала сервера"
@@ -21,22 +21,35 @@ help:
 test:
     cd "{{project}}" && npm test && npm run test:ui
 
-start: stop
+start:
     #!/usr/bin/env bash
     set -euo pipefail
     cd "{{project}}"
-    mkdir -p "{{dir}}/.run"
-    node server.js > "{{dir}}/.run/server.log" 2>&1 &
-    echo "$!" > "{{dir}}/.run/server.pid"
+    if [[ ! -x node_modules/.bin/vite || ! -x node_modules/.bin/tsc ]]; then
+        npm ci --no-audit --no-fund
+    fi
+    npm run web:build
+
+    just --justfile "{{dir}}/justfile" stop
+    run_dir="{{dir}}/.run"
+    url="http://127.0.0.1:{{port}}/"
+    mkdir -p "$run_dir"
+    PORT="{{port}}" setsid node server.js </dev/null > "$run_dir/server.log" 2>&1 &
+    pid=$!
+    echo "$pid" > "$run_dir/server.pid"
     for _ in $(seq 1 50); do
-        if curl -fsS -o /dev/null --silent "http://127.0.0.1:{{port}}/" 2>/dev/null; then
-            echo "AutoDrive: http://127.0.0.1:{{port}}/ (pid $(cat "{{dir}}/.run/server.pid"))"
+        kill -0 "$pid" 2>/dev/null || break
+        if curl --noproxy '*' -fs --max-time 1 -o /dev/null "$url"; then
+            echo "AutoDrive: $url (pid $pid)"
             exit 0
         fi
         sleep 0.1
     done
-    echo "Сервер не поднялся за 5 секунд; последние строки журнала:" >&2
-    tail -n 20 "{{dir}}/.run/server.log" >&2 || true
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    rm -f -- "$run_dir/server.pid"
+    echo "AutoDrive не начал отдавать страницу $url. Последние строки журнала:" >&2
+    tail -n 20 "$run_dir/server.log" >&2 || true
     exit 1
 
 stop:
