@@ -1,0 +1,5 @@
+start:
+    python3 ../practice_07.2/tools/site-n8n.py 7.1 start
+
+test:
+    python3 ../practice_07.2/tools/site-n8n.py 7.1 test

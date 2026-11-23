@@ -272,13 +272,19 @@
             {
               "id": "9adf9ad4-6e24-56c4-8269-9610f25ff8bb",
               "name": "week_start",
-              "value": "={{ $now.minus({ days: 14 }).toISODate() }}",
+              "value": "={{ $now.startOf('week').minus({ weeks: 2 }).toISODate() }}",
               "type": "string"
             },
             {
               "id": "9e7a6530-c5bd-585a-b435-7bc154f0f226",
               "name": "week_end",
-              "value": "={{ $now.minus({ days: 7 }).toISODate() }}",
+              "value": "={{ $now.startOf('week').minus({ weeks: 1 }).toISODate() }}",
+              "type": "string"
+            },
+            {
+              "id": "232749b5-efbf-4da7-b68c-4bdc1982292c",
+              "name": "repo",
+              "value": "kulakva20062/practice-7-n8n-demo",
               "type": "string"
             }
           ]
@@ -296,6 +302,39 @@
     },
     {
       "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "weekly_stats",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "week_start",
+              "condition": "eq",
+              "keyValue": "={{ $json.week_start }}"
+            },
+            {
+              "keyName": "repo",
+              "condition": "eq",
+              "keyValue": "={{ $json.repo }}"
+            }
+          ]
+        }
+      },
+      "id": "f1e84d3a-ba54-45a0-ab50-03cd47dca9be",
+      "name": "No data for previous week?",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        480,
+        240
+      ]
+    },
+    {
+      "parameters": {
         "dataTableId": {
           "__rl": true,
           "value": "weekly_stats",
@@ -306,7 +345,7 @@
           "value": {
             "week_start": "={{ $json.week_start }}",
             "week_end": "={{ $json.week_end }}",
-            "repo": "kulakva20062/ai-review-sandbox",
+            "repo": "={{ $json.repo }}",
             "issues_opened": "3",
             "issues_closed": "1",
             "prs_opened": "1",
@@ -461,7 +500,7 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1,
       "position": [
-        480,
+        700,
         240
       ]
     }
@@ -523,6 +562,17 @@
       ]
     },
     "Test row: previous week (simulated)": {
+      "main": [
+        [
+          {
+            "node": "No data for previous week?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No data for previous week?": {
       "main": [
         [
           {

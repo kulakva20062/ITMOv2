@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Еженедельная статистика\nCron `0 9 * * MON` (Europe/Moscow) или ручной запуск →\n4 запроса GitHub Search API за 7 дней → Code: группировка по типу и автору →\nData Table `weekly_stats`: история + Δ к прошлой неделе → Basic LLM Chain «AI-комментарий недели» → Gmail (HTML).",
+        "content": "## Еженедельная статистика\nCron `0 9 * * MON` (Europe/Moscow) или ручной запуск →\n4 запроса GitHub Search API за предыдущую календарную неделю → Code: группировка по типу и автору →\nData Table `weekly_stats`: история + Δ к прошлой неделе → Basic LLM Chain «AI-комментарий недели» → Gmail (HTML).",
         "height": 190,
         "width": 620,
         "color": 7
@@ -62,7 +62,7 @@
             {
               "id": "e1b6892a-9e3e-5733-a861-111b6927b271",
               "name": "repo",
-              "value": "ai-review-sandbox",
+              "value": "practice-7-n8n-demo",
               "type": "string"
             },
             {
@@ -74,13 +74,13 @@
             {
               "id": "dbffbf22-dcd1-5833-b8ad-665f17184bb1",
               "name": "since",
-              "value": "={{ $now.minus({ days: 7 }).toISODate() }}",
+              "value": "={{ $now.startOf('week').minus({ weeks: 1 }).toISODate() }}",
               "type": "string"
             },
             {
               "id": "4ce24f1c-aa3d-5aed-834d-1c46894b1617",
               "name": "until",
-              "value": "={{ $now.toISODate() }}",
+              "value": "={{ $now.startOf('week').toISODate() }}",
               "type": "string"
             },
             {
@@ -121,13 +121,33 @@
             }
           ]
         },
-        "options": {},
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body.items.length < 100 }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10,
+              "requestInterval": 0
+            }
+          }
+        },
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "q",
-              "value": "=repo:{{ $('Config').first().json.owner }}/{{ $('Config').first().json.repo }} is:issue created:>={{ $('Config').first().json.since }}"
+              "value": "=repo:{{ $('Config').first().json.owner }}/{{ $('Config').first().json.repo }} is:issue created:{{ $now.startOf('week').minus({ weeks: 1 }).toUTC().toISO({ suppressMilliseconds: true }) }}..{{ $now.startOf('week').minus({ seconds: 1 }).toUTC().toISO({ suppressMilliseconds: true }) }}"
             },
             {
               "name": "per_page",
@@ -170,13 +190,33 @@
             }
           ]
         },
-        "options": {},
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body.items.length < 100 }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10,
+              "requestInterval": 0
+            }
+          }
+        },
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "q",
-              "value": "=repo:{{ $('Config').first().json.owner }}/{{ $('Config').first().json.repo }} is:issue closed:>={{ $('Config').first().json.since }}"
+              "value": "=repo:{{ $('Config').first().json.owner }}/{{ $('Config').first().json.repo }} is:issue closed:{{ $now.startOf('week').minus({ weeks: 1 }).toUTC().toISO({ suppressMilliseconds: true }) }}..{{ $now.startOf('week').minus({ seconds: 1 }).toUTC().toISO({ suppressMilliseconds: true }) }}"
             },
             {
               "name": "per_page",
@@ -198,7 +238,8 @@
           "id": "GITHUB_CRED_ID",
           "name": "GitHub account"
         }
-      }
+      },
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -219,13 +260,33 @@
             }
           ]
         },
-        "options": {},
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body.items.length < 100 }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10,
+              "requestInterval": 0
+            }
+          }
+        },
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "q",
-              "value": "=repo:{{ $('Config').first().json.owner }}/{{ $('Config').first().json.repo }} is:pr created:>={{ $('Config').first().json.since }}"
+              "value": "=repo:{{ $('Config').first().json.owner }}/{{ $('Config').first().json.repo }} is:pr created:{{ $now.startOf('week').minus({ weeks: 1 }).toUTC().toISO({ suppressMilliseconds: true }) }}..{{ $now.startOf('week').minus({ seconds: 1 }).toUTC().toISO({ suppressMilliseconds: true }) }}"
             },
             {
               "name": "per_page",
@@ -247,7 +308,8 @@
           "id": "GITHUB_CRED_ID",
           "name": "GitHub account"
         }
-      }
+      },
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -268,13 +330,33 @@
             }
           ]
         },
-        "options": {},
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body.items.length < 100 }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10,
+              "requestInterval": 0
+            }
+          }
+        },
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "q",
-              "value": "=repo:{{ $('Config').first().json.owner }}/{{ $('Config').first().json.repo }} is:pr merged:>={{ $('Config').first().json.since }}"
+              "value": "=repo:{{ $('Config').first().json.owner }}/{{ $('Config').first().json.repo }} is:pr merged:{{ $now.startOf('week').minus({ weeks: 1 }).toUTC().toISO({ suppressMilliseconds: true }) }}..{{ $now.startOf('week').minus({ seconds: 1 }).toUTC().toISO({ suppressMilliseconds: true }) }}"
             },
             {
               "name": "per_page",
@@ -296,11 +378,12 @@
           "id": "GITHUB_CRED_ID",
           "name": "GitHub account"
         }
-      }
+      },
+      "executeOnce": true
     },
     {
       "parameters": {
-        "jsCode": "// Группировка статистики за неделю: по типу (лейблы WF1) и по автору.\nconst cfg = $('Config').first().json;\nconst opened = $('GH: issues opened this week').first().json.items || [];\nconst closed = $('GH: issues closed this week').first().json.items || [];\nconst prsOpened = $('GH: PRs opened this week').first().json.items || [];\nconst prsMerged = $('GH: PRs merged this week').first().json.items || [];\nconst TYPES = ['bug', 'task', 'feature', 'needs-triage'];\nconst typeOf = i => {\n  const names = (i.labels || []).map(l => typeof l === 'string' ? l : l.name);\n  return TYPES.find(t => names.includes(t)) || 'unlabeled';\n};\nconst byType = Object.fromEntries([...TYPES, 'unlabeled'].map(t => [t, 0]));\nconst byAuthor = {};\nfor (const i of opened) {\n  const t = typeOf(i), a = i.user?.login || 'unknown';\n  byType[t]++;\n  byAuthor[a] ||= { author: a, total: 0, bug: 0, task: 0, feature: 0, 'needs-triage': 0, unlabeled: 0 };\n  byAuthor[a].total++; byAuthor[a][t]++;\n}\nconst closedByType = Object.fromEntries([...TYPES, 'unlabeled'].map(t => [t, 0]));\nfor (const i of closed) closedByType[typeOf(i)]++;\nconst stats = {\n  week_start: cfg.since, week_end: cfg.until, repo: `${cfg.owner}/${cfg.repo}`,\n  issues_opened: opened.length, issues_closed: closed.length,\n  prs_opened: prsOpened.length, prs_merged: prsMerged.length,\n  by_type: byType, closed_by_type: closedByType,\n  by_author: Object.values(byAuthor).sort((a, b) => b.total - a.total),\n};\nreturn [{ json: stats }];"
+        "jsCode": "// Группировка статистики за неделю: по типу (лейблы WF1) и по автору.\nconst cfg = $('Config').first().json;\nconst searchResults = nodeName => {\n  const pages = $(nodeName).all().map(item => item.json);\n  const items = pages.flatMap(page => page.items ?? []);\n  const expected = Number(pages[0]?.total_count ?? items.length);\n  if (pages.some(page => page.incomplete_results) || items.length !== expected) {\n    throw new Error(`${nodeName}: GitHub вернул ${items.length} из ${expected} результатов`);\n  }\n  return items;\n};\nconst opened = searchResults('GH: issues opened this week');\nconst closed = searchResults('GH: issues closed this week');\nconst prsOpened = searchResults('GH: PRs opened this week');\nconst prsMerged = searchResults('GH: PRs merged this week');\nconst TYPES = ['bug', 'task', 'feature', 'needs-triage'];\nconst typeOf = i => {\n  const names = (i.labels || []).map(l => typeof l === 'string' ? l : l.name);\n  return TYPES.find(t => names.includes(t)) || 'unlabeled';\n};\nconst byType = Object.fromEntries([...TYPES, 'unlabeled'].map(t => [t, 0]));\nconst byAuthor = {};\nfor (const i of opened) {\n  const t = typeOf(i), a = i.user?.login || 'unknown';\n  byType[t]++;\n  byAuthor[a] ||= { author: a, total: 0, bug: 0, task: 0, feature: 0, 'needs-triage': 0, unlabeled: 0 };\n  byAuthor[a].total++; byAuthor[a][t]++;\n}\nconst closedByType = Object.fromEntries([...TYPES, 'unlabeled'].map(t => [t, 0]));\nfor (const i of closed) closedByType[typeOf(i)]++;\nconst stats = {\n  week_start: cfg.since, week_end: cfg.until, repo: `${cfg.owner}/${cfg.repo}`,\n  issues_opened: opened.length, issues_closed: closed.length,\n  prs_opened: prsOpened.length, prs_merged: prsMerged.length,\n  by_type: byType, closed_by_type: closedByType,\n  by_author: Object.values(byAuthor).sort((a, b) => b.total - a.total),\n};\nreturn [{ json: stats }];"
       },
       "id": "832217da-e5d5-5e66-9c9e-f21827c41c6b",
       "name": "Group by type & author",
@@ -321,7 +404,18 @@
         },
         "matchType": "allConditions",
         "filters": {
-          "conditions": []
+          "conditions": [
+            {
+              "keyName": "repo",
+              "condition": "eq",
+              "keyValue": "={{ $json.repo }}"
+            },
+            {
+              "keyName": "week_start",
+              "condition": "eq",
+              "keyValue": "={{ DateTime.fromISO($json.week_start).minus({ weeks: 1 }).toISODate() }}"
+            }
+          ]
         },
         "returnAll": true
       },
@@ -337,7 +431,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Δ к прошлой неделе: берём из Data Table самую свежую запись с week_start раньше текущей.\nconst s = $('Group by type & author').first().json;\nconst rows = $input.all().map(i => i.json).filter(r => r.week_start && r.week_start < s.week_start);\nrows.sort((a, b) => a.week_start < b.week_start ? 1 : -1);\nconst prev = rows[0] || null;\nconst metrics = ['issues_opened', 'issues_closed', 'prs_opened', 'prs_merged', 'bug', 'task', 'feature', 'needs_triage'];\nconst cur = { issues_opened: s.issues_opened, issues_closed: s.issues_closed, prs_opened: s.prs_opened,\n  prs_merged: s.prs_merged, bug: s.by_type.bug, task: s.by_type.task, feature: s.by_type.feature,\n  needs_triage: s.by_type['needs-triage'] };\nconst delta = {};\nfor (const m of metrics) delta[m] = prev ? cur[m] - Number(prev[m] || 0) : null;\nreturn [{ json: { ...s, current: cur, previous: prev, delta } }];"
+        "jsCode": "// Из Data Table приходит предыдущая календарная неделя этого репозитория.\nconst s = $('Group by type & author').first().json;\nconst prev = $input.all().map(item => item.json).find(row => row.week_start) ?? null;\nconst metrics = ['issues_opened', 'issues_closed', 'prs_opened', 'prs_merged', 'bug', 'task', 'feature', 'needs_triage'];\nconst cur = { issues_opened: s.issues_opened, issues_closed: s.issues_closed, prs_opened: s.prs_opened,\n  prs_merged: s.prs_merged, bug: s.by_type.bug, task: s.by_type.task, feature: s.by_type.feature,\n  needs_triage: s.by_type['needs-triage'] };\nconst delta = {};\nfor (const m of metrics) delta[m] = prev ? cur[m] - Number(prev[m] || 0) : null;\nreturn [{ json: { ...s, current: cur, previous: prev, delta } }];"
       },
       "id": "638e9d3a-79e1-5cdc-8fd3-e00b1c2d6b7f",
       "name": "Compute Δ vs previous week",
@@ -517,6 +611,11 @@
               "keyName": "week_start",
               "condition": "eq",
               "keyValue": "={{ $('Compute Δ vs previous week').first().json.week_start }}"
+            },
+            {
+              "keyName": "repo",
+              "condition": "eq",
+              "keyValue": "={{ $('Compute Δ vs previous week').first().json.repo }}"
             }
           ]
         }
@@ -597,7 +696,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// HTML-письмо: сводка, Δ к прошлой неделе, таблицы по типу и по автору, AI-комментарий недели.\nconst d = $('Compute Δ vs previous week').first().json;\nconst ai = ($json.text || '').replace(/<think>[\\s\\S]*?<\\/think>/g, '').trim();\nconst esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));\nconst fmt = v => v === null || v === undefined ? '—' : v > 0 ? `<span style=\"color:#1a7f37\">+${v}</span>` : v < 0 ? `<span style=\"color:#cf222e\">${v}</span>` : '0';\nconst td = 'style=\"border:1px solid #d0d7de;padding:6px 10px\"';\nconst th = 'style=\"border:1px solid #d0d7de;padding:6px 10px;background:#f6f8fa;text-align:left\"';\nconst label = { issues_opened: 'Issues открыто', issues_closed: 'Issues закрыто', prs_opened: 'PR открыто', prs_merged: 'PR смёржено', bug: 'bug', task: 'task', feature: 'feature', needs_triage: 'needs-triage' };\nconst prevW = d.previous ? d.previous.week_start : null;\nconst summary = Object.keys(label).map(k => `<tr><td ${td}>${label[k]}</td><td ${td}>${d.current[k]}</td><td ${td}>${d.previous ? d.previous[k] : '—'}</td><td ${td}>${fmt(d.delta[k])}</td></tr>`).join('');\nconst authors = d.by_author.length ? d.by_author.map(a => `<tr><td ${td}>@${esc(a.author)}</td><td ${td}>${a.total}</td><td ${td}>${a.bug}</td><td ${td}>${a.task}</td><td ${td}>${a.feature}</td><td ${td}>${a['needs-triage']}</td><td ${td}>${a.unlabeled}</td></tr>`).join('') : `<tr><td ${td} colspan=\"7\">Нет новых Issues</td></tr>`;\nconst html = `<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#1f2328\">\n<h2>📊 Еженедельная статистика Issues — ${esc(d.repo)}</h2>\n<p>Период: <b>${d.week_start}</b> — <b>${d.week_end}</b>${prevW ? ` · сравнение с неделей от ${prevW}` : ' · прошлой недели в Data Table нет'}</p>\n<h3>Сводка и Δ к прошлой неделе</h3>\n<table style=\"border-collapse:collapse\"><tr><th ${th}>Метрика</th><th ${th}>Эта неделя</th><th ${th}>Прошлая</th><th ${th}>Δ</th></tr>${summary}</table>\n<h3>По автору (открытые за неделю Issues)</h3>\n<table style=\"border-collapse:collapse\"><tr><th ${th}>Автор</th><th ${th}>Всего</th><th ${th}>bug</th><th ${th}>task</th><th ${th}>feature</th><th ${th}>needs-triage</th><th ${th}>без лейбла</th></tr>${authors}</table>\n<h3>🤖 AI-комментарий недели</h3>\n<div style=\"background:#f6f8fa;border-left:4px solid #8250df;padding:10px 14px\">${esc(ai).replace(/\\n/g, '<br>')}</div>\n<p style=\"color:#656d76;font-size:12px\">Сгенерировано n8n · execution ${$execution.id}</p></div>`;\nreturn [{ json: { subject: `[${d.repo}] Issues за неделю ${d.week_start} — ${d.week_end}: +${d.current.issues_opened} / закрыто ${d.current.issues_closed}`, html, report_to: $('Config').first().json.report_to } }];"
+        "jsCode": "// HTML-письмо: сводка, Δ к прошлой неделе, таблицы по типу и по автору, AI-комментарий недели.\nconst d = $('Compute Δ vs previous week').first().json;\nconst ai = ($json.text || '').replace(/<think>[\\s\\S]*?<\\/think>/g, '').trim();\nconst esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));\nconst fmt = v => v === null || v === undefined ? '—' : v > 0 ? `<span style=\"color:#1a7f37\">+${v}</span>` : v < 0 ? `<span style=\"color:#cf222e\">${v}</span>` : '0';\nconst td = 'style=\"border:1px solid #d0d7de;padding:6px 10px\"';\nconst th = 'style=\"border:1px solid #d0d7de;padding:6px 10px;background:#f6f8fa;text-align:left\"';\nconst label = { issues_opened: 'Issues открыто', issues_closed: 'Issues закрыто', prs_opened: 'PR открыто', prs_merged: 'PR смёржено', bug: 'bug', task: 'task', feature: 'feature', needs_triage: 'needs-triage' };\nconst prevW = d.previous ? d.previous.week_start : null;\nconst summary = Object.keys(label).map(k => `<tr><td ${td}>${label[k]}</td><td ${td}>${d.current[k]}</td><td ${td}>${d.previous ? d.previous[k] : '—'}</td><td ${td}>${fmt(d.delta[k])}</td></tr>`).join('');\nconst authors = d.by_author.length ? d.by_author.map(a => `<tr><td ${td}>@${esc(a.author)}</td><td ${td}>${a.total}</td><td ${td}>${a.bug}</td><td ${td}>${a.task}</td><td ${td}>${a.feature}</td><td ${td}>${a['needs-triage']}</td><td ${td}>${a.unlabeled}</td></tr>`).join('') : `<tr><td ${td} colspan=\"7\">Нет новых Issues</td></tr>`;\nconst html = `<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#1f2328\">\n<h2>📊 Еженедельная статистика Issues — ${esc(d.repo)}</h2>\n<p>Период (до указанной даты, не включая её): <b>${d.week_start}</b> — <b>${d.week_end}</b>${prevW ? ` · сравнение с неделей от ${prevW}` : ' · прошлой недели в Data Table нет'}</p>\n<h3>Сводка и Δ к прошлой неделе</h3>\n<table style=\"border-collapse:collapse\"><tr><th ${th}>Метрика</th><th ${th}>Эта неделя</th><th ${th}>Прошлая</th><th ${th}>Δ</th></tr>${summary}</table>\n<h3>По автору (открытые за неделю Issues)</h3>\n<table style=\"border-collapse:collapse\"><tr><th ${th}>Автор</th><th ${th}>Всего</th><th ${th}>bug</th><th ${th}>task</th><th ${th}>feature</th><th ${th}>needs-triage</th><th ${th}>без лейбла</th></tr>${authors}</table>\n<h3>🤖 AI-комментарий недели</h3>\n<div style=\"background:#f6f8fa;border-left:4px solid #8250df;padding:10px 14px\">${esc(ai).replace(/\\n/g, '<br>')}</div>\n<p style=\"color:#656d76;font-size:12px\">Сгенерировано n8n · execution ${$execution.id}</p></div>`;\nreturn [{ json: { subject: `[${d.repo}] Issues за неделю ${d.week_start} — ${d.week_end}: +${d.current.issues_opened} / закрыто ${d.current.issues_closed}`, html, report_to: $('Config').first().json.report_to } }];"
       },
       "id": "2e89d107-4688-5ae1-a417-ea51955dc446",
       "name": "Build HTML email",

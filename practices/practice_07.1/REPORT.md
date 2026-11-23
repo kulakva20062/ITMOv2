@@ -2,8 +2,11 @@
 
 ## Файлы
 
-- `workflows/7.1/ai-code-review.workflow.json` — основной сценарий (импортируется целиком через Ctrl+C → Ctrl+V на пустом канвасе n8n или Import from File).
-- `REPORT_7.1.md` — этот отчёт: как импортировать, что показал ревьюверу, критерии.
+- [ai-code-review.workflow.json](workflows/ai-code-review.workflow.json) — основной сценарий для Import from File в n8n.
+
+Из каталога `practices/practice_07.1` команда `just start` открывает редактор учебного n8n. Команда `just test` запускает на том же сайте проверку ревью, inline-комментариев, дедупликации и записей `ai_reviewed_prs`. Проверка читает результаты в GitHub и n8n и возвращает ссылку на Execution. Для команд нужен Python 3. Токен проверки берётся из `N8N_TEST_TOKEN` или из `~/.config/itmo-practice07/test-token`. [Редактор 7.1](https://n8n-itmo.cyrweb.ru/workflow/5TxcZj0jrj1W74VS)
+
+На учебном сайте модели подключены через KeyShop Responses API. Основное ревью использует `kimi-k3.1-pro`, второе мнение — `kimi-k2.6`.
 
 ## Что делает сценарий
 
@@ -55,7 +58,7 @@ LLM подключён через [OI]-совместимый credential `openAi
    - **GitHub account** (`githubApi`, token classic c правами `repo` + `admin:repo:hooks`) — токен: https://github.com/settings/tokens. Один credential идёт и в триггер, и в HTTP-ноды, и в GitHub-ноды.
    - **OpenAi (Kimi)** (`openAiApi`, API key Kimi) — в нодах «Model: kimi-k2.6» и «Model: kimi-k2.5».
 3. Заменить репозиторий в `GitHub Trigger` (owner/repo) на свой тестовый (для проверки важно, чтобы токен имел права на создание webhook — то есть вы владелец репозитория или он в вашей организации).
-4. **Setup Data Tables** (файл `workflows/7.2/wf-setup-data-tables.workflow.json`) — запустить один раз вручную: создаст таблицы `ai_reviewed_prs`, `processed_issues`, `weekly_stats`, `bugfix_runs`.
+4. Вручную запустить [Setup Data Tables](../practice_07.2/workflows/wf-setup-data-tables.workflow.json) для создания `ai_reviewed_prs`, `processed_issues`, `weekly_stats` и `bugfix_runs`.
 5. Опубликовать (Publish/Activate) сценарий, создать PR → в PR появится review с inline-комментариями, PR получит лейбл `ReviewedByAI`.
 
 ## Что показывать ревьюверу
@@ -63,19 +66,17 @@ LLM подключён через [OI]-совместимый credential `openAi
 - **Выбор модели** — Switch «Which model?» от поля `mode` из Context; у двух веток review — разные ноды модели (`kimi-k2.6` и `kimi-k2.5`). Результаты двух моделей в тестах отличаются по акцентам: основная (k2.6) даёт структурированный JSON-разбор по блокам, вторая (k2.5) — более «человеческий» текст с другими приоритетами (в тест-прогоне k2.5 отметила `eval` как security-проблему и попросила docstring для `median`, k2.6 — безопасный парсер конфига и обработку KeyError).
 - **Где хранится состояние** — Data Table `ai_reviewed_prs`, ключ `pr_key` = `owner/repo#номер`, плюс `mode`, `model`, `trigger`, `review_id`, `reviewed_at`. Сценарий решает «запускать ли ревью» так: после Context идёт If «Primary model? (dedup only for it)» → для primary-режима ищется строка в таблице по `pr_key` → если есть (If «PR already in table?») → только комментарий-уведомление о пропуске, без запроса к LLM; если нет — полный флоу и запись после публикации.
 - **Повторный `/make_ai_review`** — не вызывает модель: Execution содержит `Route event → Mode → Context → Data Table → Comment: review skipped (duplicate)` и заканчивается. Ссылка на запись в таблице и дата первого ревью прикладываются в комментарии. `/make_other_ai_review` сознательно НЕ дедуплицируется — второе мнение разрешено в любой момент (это тестировалось: после skip-команды другой модели ревью всё равно публикуется).
-- **Точечные комментарии** — `Split diff into hunks` строит по каждому hunk'у: файл, диапазон строк новой версии (RIGHT) и старой (LEFT), anchor — диапазон добавленных строк; модель возвращает JSON `{summary, comments:[{hunk, severity, comment}]}`, `Build inline review` собирает GitHub `POST /pulls/{n}/reviews` с массивом `comments[{path, line, side, start_line, body}]` — это стандартный inline-комментарий GitHub review. Если GitHub отклоняет inline (например, из-за большого diff или прав), срабатывает `onError: continueErrorOutput` → Fallback-комментарий со всеми блоками списком; запись в Data Table происходит в обоих случаях.
+- **Точечные комментарии**. Workflow читает страницы файлов PR, разбивает возвращённые GitHub текстовые патчи на блоки и отправляет модели их группами по десять. Модель возвращает `{summary, comments:[{hunk, severity, comment}]}`. `Build inline review` проверяет, что все блоки получили комментарии, и формирует `POST /pulls/{n}/reviews` с координатами `path`, `line`, `side` и SHA коммита. На один блок модели передаётся до 120 строк и 3000 символов. При ошибке inline-публикации workflow отправляет общий комментарий и сохраняет результат в Data Table.
 
 ## Что приложено для сдачи
 
-- Экспорт сценария: `workflows/7.1/ai-code-review.workflow.json` (этот файл).
-- Тестовый PR с комментариями ассистента: см. ниже «Локальный прогон» — на этапе сдачи нужно проделать те же шаги на реальном репозитории с Kimi и приложить ссылку.
-- Скриншоты Executions — вкладка Executions сценария после реальных запусков (шаги A–D ниже воспроизводятся один-в-один).
+- Экспорт сценария в [workflows](workflows/ai-code-review.workflow.json).
+- [Тестовый PR](https://github.com/kulakva20062/practice-7-n8n-demo/pull/1) содержит два ревью на одном diff и уведомление о пропуске повторной команды. В демонстрации использованы Gemma 3 4B и Qwen3 8B через Ollama.
+- [Скриншоты Executions и строки Data Table](https://github.com/kulakva20062/practice-7-n8n-demo#71--ревью-pr) опубликованы вместе с результатами.
 
 ## Локальный прогон (как тестировался JSON)
 
-Полный E2E на локальном стенде (n8n 2.47.7 + mock GitHub API + локальные модели): открытие PR → review (2 inline-комментария: `shop/cart.py:18-26` security по `eval`, `shop/stats.py:12-16` style по `median`), повторный `/make_ai_review` → skip-комментарий без вызова LLM, `/make_other_ai_review` → вторая модель публикует review с 2 inline, посторонний комментарий → Route → ignore. Лейбл `ReviewedByAI, ReviewedByOtherAI` после обоих ревью, запись в Data Table после каждого.
-
-В реальной сдаче используется Kimi вместо локальных моделей — различие только в нодах модели (имена моделей меняются в credential), логика воркфлоу идентична.
+На n8n 2.47.7 с заглушками GitHub и LLM проверены открытие PR, повторный `/make_ai_review` без вызова модели, `/make_other_ai_review` с другой моделью и запись результатов в Data Table. В тесте с двумя страницами файлов каждая модель вернула 101 inline-комментарий. При ручных Executions с реальными событиями GitHub обе модели опубликовали по два inline-комментария. События получены через GitHub CLI и сохранены как входы сценария.
 
 ## Критерии оценки (12 баллов)
 

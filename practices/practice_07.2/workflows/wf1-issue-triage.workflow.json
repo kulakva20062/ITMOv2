@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## WF1 — классификация Issues\nissues.opened → дедупликация (Data Table `processed_issues`) → first-time-contributor →\nSub-workflow классификатора → Switch: bug / task / feature, а `confidence < 0.8` или unknown → `needs-triage` **без комментария**.",
+        "content": "## WF1 — классификация Issues\nissues.opened → дедупликация → Sub-workflow → Switch по типу и уверенности.\nПри `confidence < 0.8` или unknown ставится `needs-triage` без комментариев. Приветствие first-time-contributor отправляется после классификации определённого типа.",
         "height": 170,
         "width": 620,
         "color": 7
@@ -27,7 +27,7 @@
         },
         "repository": {
           "__rl": true,
-          "value": "ai-review-sandbox",
+          "value": "practice-7-n8n-demo",
           "mode": "name"
         },
         "events": [
@@ -276,8 +276,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1100,
-        40
+        3010,
+        -60
       ]
     },
     {
@@ -309,8 +309,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1320,
-        -120
+        3230,
+        -170
       ],
       "credentials": {
         "githubApi": {
@@ -348,8 +348,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1540,
-        -120
+        3450,
+        -170
       ],
       "credentials": {
         "githubApi": {
@@ -949,8 +949,8 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1,
       "position": [
-        3120,
-        40
+        3670,
+        70
       ]
     }
   ],
@@ -1017,7 +1017,7 @@
         ],
         [
           {
-            "node": "First-time contributor?",
+            "node": "Classify (Execute Sub-workflow)",
             "type": "main",
             "index": 0
           }
@@ -1035,7 +1035,7 @@
         ],
         [
           {
-            "node": "Classify (Execute Sub-workflow)",
+            "node": "Data Table: mark issue processed",
             "type": "main",
             "index": 0
           }
@@ -1057,7 +1057,7 @@
       "main": [
         [
           {
-            "node": "Classify (Execute Sub-workflow)",
+            "node": "Data Table: mark issue processed",
             "type": "main",
             "index": 0
           }
@@ -1184,7 +1184,7 @@
       "main": [
         [
           {
-            "node": "Data Table: mark issue processed",
+            "node": "First-time contributor?",
             "type": "main",
             "index": 0
           }
