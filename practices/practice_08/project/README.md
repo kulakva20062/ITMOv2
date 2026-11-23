@@ -27,9 +27,9 @@ npm ci                 # зависимости приложения, Vite/TypeS
 npm run web:build      # проверка TypeScript + production-сборка в web/dist
 npm start              # node server.js: корень / и /ui отдают web/dist, /api/** — API
                        # (порт 8000 по умолчанию, можно переопределить PORT=…)
-just start             # то же самое из practices/practice_08: justfile лежит там;
-                       # если server.js уже слушает 8000 (свой или ручной), останавливает
-                       # и поднимает заново; just stop / just status / just logs — там же
+just start             # из practices/practice_08: установит зависимости при первом запуске,
+                       # соберёт фронтенд, запустит сервер и проверит страницу на порту 8000;
+                       # just stop / just status / just logs — там же
 just test              # из practices/practice_08 прогоняет Node и Playwright
 npm run web:dev        # Vite dev-сервер на :5173; /api проксируется на localhost:8000,
                        # поэтому нужен запущенный `npm start`
