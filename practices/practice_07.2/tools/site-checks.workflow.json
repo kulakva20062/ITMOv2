@@ -1,0 +1,270 @@
+{
+  "name": "7.x Проверка практик из just test",
+  "nodes": [
+    {
+      "id": "c2529065-9750-4846-9ac4-3e516147cd52",
+      "name": "Run practice checks",
+      "webhookId": "5e7bf1c1-b140-494e-bb38-acbf9821c709",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        260
+      ],
+      "parameters": {
+        "path": "itmo-kulakva-practice-07-checks",
+        "httpMethod": "POST",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_SITE_HEADER_AUTH_CREDENTIAL_ID",
+          "name": "Practice 7 test authorization"
+        }
+      }
+    },
+    {
+      "id": "682f535f-b5e7-4fe1-9cfc-e8c7e2c95c09",
+      "name": "Choose checks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        250,
+        260
+      ],
+      "parameters": {
+        "jsCode": "\nconst { practice } = $json.body;\nconst api = 'https://api.github.com/repos/kulakva20062/practice-7-n8n-demo';\nconst endpoints = {\n  '7.1': ['pulls/1/reviews', 'pulls/1/comments', 'issues/1/comments'],\n  '7.2': ['issues/2', 'issues/3', 'issues/4', 'issues/5', 'pulls?state=closed&base=main&per_page=50'],\n};\nif (!Object.hasOwn(endpoints, practice)) throw new Error('Unknown practice');\nreturn endpoints[practice].map(path => ({json: {path, url: `${api}/${path}`}}));\n"
+      }
+    },
+    {
+      "id": "83e225cc-7f9e-4f05-9383-077a2757cf1e",
+      "name": "Read GitHub evidence",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        260
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "092d93f3-4103-43e6-827b-0b1e3b220dce",
+      "name": "Review practice?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        670,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "033d1e74-5c1d-4828-b378-01edcd890977",
+              "leftValue": "={{ $('Run practice checks').first().json.body.practice }}",
+              "rightValue": "7.1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6aac22f3-bfc4-449d-9166-ae6749a83682",
+      "name": "Read review table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "position": [
+        725,
+        100
+      ],
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ai_reviewed_prs",
+          "mode": "name"
+        },
+        "returnAll": true
+      }
+    },
+    {
+      "id": "9dab8393-1270-499f-83ab-3adc25a4c7b2",
+      "name": "Read historical metrics",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "position": [
+        725,
+        420
+      ],
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "weekly_stats",
+          "mode": "name"
+        },
+        "returnAll": true
+      }
+    },
+    {
+      "id": "f1d75636-d85f-4e2b-8291-ec4a53bcbcf9",
+      "name": "Read automatic fixes",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "position": [
+        940,
+        420
+      ],
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "bugfix_runs",
+          "mode": "name"
+        },
+        "returnAll": true
+      }
+    },
+    {
+      "id": "955b64a6-5ab5-4b0e-9b23-f50852ac0115",
+      "name": "Check and report the result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        260
+      ],
+      "parameters": {
+        "jsCode": "\nconst { practice } = $('Run practice checks').first().json.body;\nconst outputs = $('Read GitHub evidence').all().map(item => item.json.body);\nconst checks = [];\nfunction check(name, result) { checks.push({name, ok: Boolean(result)}); }\nif (practice === '7.1') {\n  const [reviews, inline, comments] = outputs;\n  check('В PR есть два ревью', reviews.length >= 2);\n  check('Inline-комментарии охватывают оба блока PR', Array.isArray(inline) && inline.length >= 4 && new Set(inline.map(comment => comment.line)).size >= 2);\n  check('GitHub получил сообщение о пропуске повтора', comments.some(comment => comment.body.includes('пропущен')));\n  const rows = $input.all().map(item => item.json).filter(row => row.pr_key === 'kulakva20062/practice-7-n8n-demo#1');\n  check('Таблица учебного n8n содержит два разных AI-ревью PR №1', new Set(rows.map(row => row.model)).size >= 2);\n} else {\n  const [bug, feature, task, unknown, pulls] = outputs;\n  for (const [issue, label] of [[bug, 'bug'], [feature, 'feature'], [task, 'task'], [unknown, 'needs-triage']]) {\n    check(`Issue №${issue.number} получила метку ${label}`, issue.labels.some(item => item.name === label) && (label !== 'needs-triage' || issue.comments === 0));\n  }\n  const stats = $('Read historical metrics').all().map(item => item.json);\n  check('В учебном n8n записана статистика двух недель', new Set(stats.filter(row => row.repo === 'kulakva20062/practice-7-n8n-demo').map(row => row.week_start)).size >= 2);\n  const fixes = $input.all().map(item => item.json);\n  const fixed = pulls.find(pr => pr.merged_at && pr.head.ref.startsWith('ai-fix/issue-2-') && /Fixes #2\\b/i.test(pr.body || ''));\n  check('Issue №2 закрыта после автоматического merge', bug.state === 'closed' && fixed && fixes.some(row => row.merged === true && row.pr_number === fixed.number));\n}\nreturn [{json: {practice, checks, ok: checks.every(check => check.ok), workflowId: $workflow.id, executionId: $execution.id}}];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Run practice checks": {
+      "main": [
+        [
+          {
+            "node": "Choose checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose checks": {
+      "main": [
+        [
+          {
+            "node": "Read GitHub evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read GitHub evidence": {
+      "main": [
+        [
+          {
+            "node": "Review practice?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review practice?": {
+      "main": [
+        [
+          {
+            "node": "Read review table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read historical metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read review table": {
+      "main": [
+        [
+          {
+            "node": "Check and report the result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read historical metrics": {
+      "main": [
+        [
+          {
+            "node": "Read automatic fixes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read automatic fixes": {
+      "main": [
+        [
+          {
+            "node": "Check and report the result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "timezone": "Europe/Moscow",
+    "executionOrder": "v1"
+  }
+}

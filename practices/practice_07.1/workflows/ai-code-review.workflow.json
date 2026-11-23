@@ -1,0 +1,1339 @@
+{
+  "name": "7.1 AI code review (PR + /make_ai_review + /make_other_ai_review)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Практика 7.1 — AI code review\n* `pull_request.opened` → ревью основной моделью\n* комментарий `/make_ai_review` → ревью основной моделью, **если PR ещё нет в Data Table**\n* комментарий `/make_other_ai_review` → ревью второй моделью (всегда)\n* diff режется на блоки → по комментарию к каждому блоку (GitHub review с inline-комментариями)\n* после ревью id PR пишется в Data Table `ai_reviewed_prs`\n\n🤖 Модели Kimi (OpenAI-совместимый credential «OpenAi (Kimi)»): основная `kimi-k2.6`, вторая `kimi-k2.5`. Если в вашем эндпоинте другие имена — выберите две разные Kimi-модели в нодах «Model: …».",
+        "height": 280,
+        "width": 560,
+        "color": 7
+      },
+      "id": "39d1202f-5ee4-54ac-b48d-f9fcbe470fd8",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "value": "kulakva20062",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "practice-7-n8n-demo",
+          "mode": "name"
+        },
+        "events": [
+          "pull_request",
+          "issue_comment"
+        ],
+        "options": {}
+      },
+      "id": "e42417bb-6799-55aa-b74a-68c6a5df92b9",
+      "name": "GitHub Trigger",
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      },
+      "webhookId": "882eb82a-deb1-5584-a2e4-60cc93d6a9b9"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "bc3a9ea6-19ff-41ab-984e-d7402f38b242",
+                    "leftValue": "={{ $json.headers['x-github-event'] }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "pull_request"
+                  },
+                  {
+                    "id": "047cbd26-0654-4ca7-9006-8411b890fa9a",
+                    "leftValue": "={{ $json.body.action }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "opened"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PR opened"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "79a3055f-e9db-4a13-b9e4-dc3a8679b172",
+                    "leftValue": "={{ $json.headers['x-github-event'] }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "issue_comment"
+                  },
+                  {
+                    "id": "6659d2e7-372b-4e7c-9762-27a453c55099",
+                    "leftValue": "={{ $json.body.action }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "created"
+                  },
+                  {
+                    "id": "d1310132-fe9f-40c5-8eae-990dd0528b37",
+                    "leftValue": "={{ !!$json.body.issue.pull_request }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  },
+                  {
+                    "id": "7fed0d70-b908-4440-b193-15258aab47fc",
+                    "leftValue": "={{ ($json.body.comment?.body || '').trim().split(/\\s+/)[0] }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "/make_ai_review"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "/make_ai_review"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "384703f9-d0fc-45b1-984d-e1fcf9e2651f",
+                    "leftValue": "={{ $json.headers['x-github-event'] }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "issue_comment"
+                  },
+                  {
+                    "id": "acb18175-5d1d-4e65-b6a0-6270280f0fee",
+                    "leftValue": "={{ $json.body.action }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "created"
+                  },
+                  {
+                    "id": "b4451ce7-4046-47f7-bf96-bd7eb1d1f4fa",
+                    "leftValue": "={{ !!$json.body.issue.pull_request }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "rightValue": ""
+                  },
+                  {
+                    "id": "6402ec64-2ec9-477e-b1b9-c055f8f23250",
+                    "leftValue": "={{ ($json.body.comment?.body || '').trim().split(/\\s+/)[0] }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "/make_other_ai_review"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "/make_other_ai_review"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "ignore"
+        }
+      },
+      "id": "c3d52401-3953-5124-ba50-ac2a0049b8b9",
+      "name": "Route event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b3b7bd4-4b96-5dff-a4e9-a92af5ff020a",
+              "name": "mode",
+              "value": "primary",
+              "type": "string"
+            },
+            {
+              "id": "416f815e-4b22-5c4f-b8ef-d76c1a654868",
+              "name": "trigger",
+              "value": "pr_opened",
+              "type": "string"
+            },
+            {
+              "id": "79d24098-5106-5068-971a-5e656cff932d",
+              "name": "model_primary",
+              "value": "kimi-k2.6",
+              "type": "string"
+            },
+            {
+              "id": "467846de-4173-5f59-87d6-18d82f4ec3f8",
+              "name": "model_other",
+              "value": "kimi-k2.5",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0888c9b8-cb8a-51f9-aa99-f970a0655d49",
+      "name": "Mode: primary (PR opened)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ed94b69a-15ce-546e-99f9-f324781d3f8b",
+              "name": "mode",
+              "value": "primary",
+              "type": "string"
+            },
+            {
+              "id": "b4cbd10a-d9e7-5ba9-8dbb-c4da43fe6b23",
+              "name": "trigger",
+              "value": "comment",
+              "type": "string"
+            },
+            {
+              "id": "add17d2e-be01-594c-b637-77a95aa047aa",
+              "name": "command",
+              "value": "/make_ai_review",
+              "type": "string"
+            },
+            {
+              "id": "2863e8b4-d1ac-5879-9059-e843eccf6fb5",
+              "name": "model_primary",
+              "value": "kimi-k2.6",
+              "type": "string"
+            },
+            {
+              "id": "bfab94a2-20f2-5117-b757-de0d5c53d4b9",
+              "name": "model_other",
+              "value": "kimi-k2.5",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "806bda63-657c-5bab-aa79-a8059ca388f7",
+      "name": "Mode: primary (/make_ai_review)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5119dc72-07ae-5997-a5ac-d9820539b611",
+              "name": "mode",
+              "value": "other",
+              "type": "string"
+            },
+            {
+              "id": "21440018-867b-535e-99a2-dad23493d815",
+              "name": "trigger",
+              "value": "comment",
+              "type": "string"
+            },
+            {
+              "id": "77185aea-fc9f-5409-a0ea-6217f35b67a4",
+              "name": "command",
+              "value": "/make_other_ai_review",
+              "type": "string"
+            },
+            {
+              "id": "119f3752-ac2e-5307-bb66-e8147d647f5a",
+              "name": "model_primary",
+              "value": "kimi-k2.6",
+              "type": "string"
+            },
+            {
+              "id": "38e3442a-41f7-5807-a766-f8b46ca192cf",
+              "name": "model_other",
+              "value": "kimi-k2.5",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a8a6e93e-d3bd-5a8e-8a57-eb9ca5f449c6",
+      "name": "Mode: other model (/make_other_ai_review)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        200
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "38a1286b-e8ef-51c6-a12e-68a660bfb633",
+      "name": "Ignore other events",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        480,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Единый контекст для всех веток: какой PR, какая модель, откуда пришёл запуск.\nconst ev = $('GitHub Trigger').first().json;\nconst b = ev.body;\nconst route = $json;\nconst repo = b.repository;\nconst number = b.pull_request ? b.number : b.issue.number;\nreturn [{ json: {\n  api: repo.url,                       // https://api.github.com/repos/<owner>/<repo>\n  repo: repo.full_name,\n  pr_number: number,\n  pr_key: `${repo.full_name}#${number}`,\n  mode: route.mode,                    // primary | other\n  model: route.mode === 'other' ? route.model_other : route.model_primary,\n  trigger: route.trigger,              // pr_opened | comment\n  command: route.command || '',\n  requested_by: b.sender?.login || '',\n} }];"
+      },
+      "id": "9a68db7c-52ae-5d28-b3e2-61d545d5e466",
+      "name": "Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "66cf9eca-1c4f-439e-80c7-f428a88ee68e",
+              "leftValue": "={{ $json.mode }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "primary"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "6407517b-9527-5557-86a7-831bb727a26a",
+      "name": "Primary model? (dedup only for it)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        940,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ai_reviewed_prs",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "pr_key",
+              "condition": "eq",
+              "keyValue": "={{ $json.pr_key }}"
+            },
+            {
+              "keyName": "mode",
+              "condition": "eq",
+              "keyValue": "primary"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "id": "928b2993-edd5-5349-af11-6a7a38061893",
+      "name": "Data Table: already reviewed?",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        -120
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fdf14be0-b4f3-4d8e-bdce-926e6dfa1798",
+              "leftValue": "={{ $json.pr_key }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "bddb0712-46a4-56e0-a6cd-8e94f4a77e2b",
+      "name": "PR already in table?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1380,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Context').first().json.api }}/issues/{{ $('Context').first().json.pr_number }}/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ body: `ℹ️ AI review для этого PR уже выполнен ${$json.reviewed_at} (модель ${$json.model}, запись в Data Table ai_reviewed_prs #${$json.id}). Повторный запуск /make_ai_review пропущен. Для второго мнения используйте /make_other_ai_review.` }) }}"
+      },
+      "id": "fa15d10c-036c-5691-b450-4fc2406fd367",
+      "name": "Comment: review skipped (duplicate)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        -300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Context').first().json.api }}/pulls/{{ $('Context').first().json.pr_number }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d1bfc370-c2a0-5a84-a564-17d6aef57d26",
+      "name": "Get PR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        60
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Context').first().json.api }}/pulls/{{ $('Context').first().json.pr_number }}/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body.length < 100 }}",
+              "limitPagesFetched": true,
+              "maxRequests": 30,
+              "requestInterval": 0
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "per_page",
+              "value": "100"
+            }
+          ]
+        }
+      },
+      "id": "1387ce6b-5f12-575c-8303-96ecc01088b3",
+      "name": "Get PR files (patches)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        60
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Разбиваем diff PR на блоки (hunks) и считаем номера строк новой версии файла —\n// к ним потом привязываются точечные комментарии review.\nconst ctx = $('Context').first().json;\nconst pr = $('Get PR').first().json;\nconst files = $input.all().map(i => i.json).filter(f => f.filename);\nconst HUNKS_PER_REQUEST = 10;\nconst MAX_LINES = 120;\nconst hunks = [];\nfor (const f of files) {\n  if (!f.patch) continue; // бинарные / слишком большие файлы GitHub отдаёт без patch\n  let cur = null, oldLn = 0, newLn = 0;\n  for (const line of f.patch.split('\\n')) {\n    const m = line.match(/^@@ -(\\d+)(?:,\\d+)? \\+(\\d+)(?:,\\d+)? @@/);\n    if (m) {\n      cur = { id: `H${hunks.length + 1}`, path: f.filename, header: line, lines: [], right: [], left: [], added: [] };\n      hunks.push(cur);\n      oldLn = +m[1]; newLn = +m[2];\n      continue;\n    }\n    if (!cur || line.startsWith('\\\\')) continue;\n    if (line.startsWith('+')) { cur.lines.push(`${String(newLn).padStart(4)} + ${line.slice(1)}`); cur.right.push(newLn); cur.added.push(newLn); newLn++; }\n    else if (line.startsWith('-')) { cur.lines.push(`   . - ${line.slice(1)}`); cur.left.push(oldLn); oldLn++; }\n    else { cur.lines.push(`${String(newLn).padStart(4)}   ${line.slice(1)}`); cur.right.push(newLn); oldLn++; newLn++; }\n  }\n}\nconst used = hunks.filter(h => h.right.length || h.left.length).map(h => {\n  // Якорь комментария: диапазон добавленных строк блока (RIGHT); если блок только удаляет — последняя удалённая строка (LEFT)\n  const anchor = h.added.length\n    ? { side: 'RIGHT', start_line: Math.min(...h.added), line: Math.max(...h.added) }\n    : h.right.length ? { side: 'RIGHT', start_line: Math.min(...h.right), line: Math.max(...h.right) }\n    : { side: 'LEFT', start_line: Math.min(...h.left), line: Math.max(...h.left) };\n  const visible = h.lines.slice(0, MAX_LINES).join('\\n').slice(0, 3000);\n  return { id: h.id, path: h.path, header: h.header, anchor, text: visible };\n});\nif (!used.length) throw new Error('GitHub не вернул текстовых блоков diff для ревью');\nconst requests = [];\nfor (let index = 0; index < used.length; index += HUNKS_PER_REQUEST) {\n  const batch = used.slice(index, index + HUNKS_PER_REQUEST);\n  const blocks = batch.map(h => `### ${h.id} — ${h.path} (${h.header})\\n${h.text}`).join('\\n\\n');\n  const prompt = `Ты — senior-разработчик и делаешь code review pull request.\nPR #${ctx.pr_number}: ${pr.title}\nОписание: ${pr.body || '(нет)'}\n\nНиже diff, разбитый на блоки ${batch[0].id}..${batch.at(-1).id}. Слева номер строки в новой версии файла, «+» — добавленная строка, «-» — удалённая.\nПроверь ТОЛЬКО изменённые строки: баги, безопасность, регрессии, производительность, нарушения best practices.\nДля КАЖДОГО блока дай отдельный комментарий (если замечаний нет — так и напиши кратко) с конкретной рекомендацией и, если нужно, примером исправления.\n\nОтветь строго JSON без markdown-обёртки:\n{\"summary\": \"общий вывод по PR (2-4 предложения)\", \"comments\": [{\"hunk\": \"H1\", \"severity\": \"bug|security|performance|style|ok\", \"comment\": \"текст на русском\"}]}\n\n${blocks}`;\n  requests.push({ json: { ...ctx, head_sha: pr.head.sha, hunks: batch, prompt } });\n}\nreturn requests;"
+      },
+      "id": "63bff128-c0cb-5689-93d5-92933c3cceae",
+      "name": "Split diff into hunks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2040,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "dd5c0616-5083-4a77-8f67-c192ac56a7c2",
+                    "leftValue": "={{ $json.mode }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "primary"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "primary"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "95dbd652-dbf0-4c36-ae8b-254cacf0bb76",
+                    "leftValue": "={{ $json.mode }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "other"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "other"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "e454ba2d-601e-56ff-9b18-700ee0d3e949",
+      "name": "Which model?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2260,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "hasOutputParser": false
+      },
+      "id": "04471ac4-69ff-5784-aa72-111c1289f0f7",
+      "name": "Review · primary model",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2500,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "hasOutputParser": false
+      },
+      "id": "0e5a10fc-f041-5356-9473-01dad9bcb570",
+      "name": "Review · other model",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2500,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "kimi-k2.6",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "a1f031cc-586d-5acb-a03e-92f4b8c58b61",
+      "name": "Model: kimi-k2.6",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2500,
+        80
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VSELLM_CRED_ID",
+          "name": "OpenAi (Kimi)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "kimi-k2.5",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "f0a31afe-dbb5-5147-83c6-b0f27730d77d",
+      "name": "Model: kimi-k2.5",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2500,
+        340
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "VSELLM_CRED_ID",
+          "name": "OpenAi (Kimi)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Собираем один GitHub review: общий вывод + точечный комментарий к каждому блоку diff.\nconst batches = $('Split diff into hunks').all().map(item => item.json);\nconst src = batches[0];\nconst hunks = batches.flatMap(batch => batch.hunks);\nconst summaries = [];\nconst byHunk = new Map();\nconst icon = { bug: '🐞', security: '🔐', performance: '🐢', style: '🎨', ok: '✅' };\nfor (const [index, item] of $input.all().entries()) {\n  const raw = item.json.text ?? item.json.output ?? '';\n  let parsed;\n  try {\n    const text = String(raw).replace(/<think>[\\s\\S]*?<\\/think>/g, '').replace(/```(?:json)?/g, '');\n    parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));\n  } catch {\n    throw new Error(`Некорректный ответ модели для группы блоков ${index + 1}`);\n  }\n  if (!Array.isArray(parsed?.comments)) throw new Error(`В группе блоков ${index + 1} нет массива comments`);\n  if (typeof parsed.summary === 'string') summaries.push(parsed.summary.trim());\n  for (const comment of parsed.comments) {\n    const id = String(comment?.hunk ?? '').trim().toUpperCase();\n    if (!id || typeof comment?.comment !== 'string' || !comment.comment.trim()) continue;\n    const comments = byHunk.get(id) ?? [];\n    comments.push(comment);\n    byHunk.set(id, comments);\n  }\n}\nconst missing = hunks.filter(hunk => !byHunk.has(hunk.id));\nif (missing.length) throw new Error(`Модель пропустила блоки ${missing.map(hunk => hunk.id).join(', ')}`);\nconst comments = hunks.map(h => {\n  const cs = byHunk.get(h.id);\n  const body = cs.map(c => `${icon[c.severity] || '💬'} **${c.severity || 'note'}** — ${c.comment}`).join('\\n\\n');\n  const c = { path: h.path, line: h.anchor.line, side: h.anchor.side, body: `**${h.id}** · ${body}` };\n  if (h.anchor.start_line < h.anchor.line) { c.start_line = h.anchor.start_line; c.start_side = h.anchor.side; }\n  return c;\n});\nconst title = src.mode === 'other' ? 'Второе мнение' : 'AI review';\nconst body = `## 🤖 ${title} · \\`${src.model}\\`\\n\\n${summaries.filter(Boolean).join('\\n\\n').slice(0, 30000)}\\n\\n` +\n  `<sub>Запуск: ${src.trigger === 'comment' ? 'команда ' + src.command : 'открытие PR'} · точечных комментариев: ${comments.length} · n8n execution ${$execution.id}</sub>`;\nreturn [{ json: { ...src, review: { commit_id: src.head_sha, event: 'COMMENT', body, comments },\n  fallback_body: (body + '\\n\\n---\\n' + comments.map(c => `**${c.path}:${c.line}**\\n${c.body}`).join('\\n\\n')).slice(0, 60000) } }];"
+      },
+      "id": "77bccab3-199b-5bd6-a998-0db9150a9082",
+      "name": "Build inline review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.api }}/pulls/{{ $json.pr_number }}/reviews",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.review) }}"
+      },
+      "id": "5a1fe3f6-a8a6-5fed-bde8-58110169a4ad",
+      "name": "Post review with inline comments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3000,
+        60
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Build inline review').first().json.api }}/issues/{{ $('Build inline review').first().json.pr_number }}/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ body: $('Build inline review').first().json.fallback_body }) }}"
+      },
+      "id": "4a413c50-34f9-58fe-b2fb-fe87ca8b36a6",
+      "name": "Fallback: single PR comment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3220,
+        240
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "ai_reviewed_prs",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "pr_key": "={{ $('Build inline review').first().json.pr_key }}",
+            "repo": "={{ $('Build inline review').first().json.repo }}",
+            "pr_number": "={{ $('Build inline review').first().json.pr_number }}",
+            "mode": "={{ $('Build inline review').first().json.mode }}",
+            "model": "={{ $('Build inline review').first().json.model }}",
+            "trigger": "={{ $('Build inline review').first().json.trigger }}",
+            "review_id": "={{ String($json.id ?? 'fallback-comment') }}",
+            "inline_comments": "={{ $json.comments?.length ?? $('Build inline review').first().json.review.comments.length }}",
+            "reviewed_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "pr_key",
+              "displayName": "pr_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "repo",
+              "displayName": "repo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pr_number",
+              "displayName": "pr_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "trigger",
+              "displayName": "trigger",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "review_id",
+              "displayName": "review_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "inline_comments",
+              "displayName": "inline_comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reviewed_at",
+              "displayName": "reviewed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "aa9bf765-dade-5711-a727-7d6c942b8b28",
+      "name": "Data Table: save reviewed PR",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        3440,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Build inline review').first().json.api }}/issues/{{ $('Build inline review').first().json.pr_number }}/labels",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: $('Build inline review').first().json.mode === 'other' ? ['ReviewedByAI', 'ReviewedByOtherAI'] : ['ReviewedByAI'] }) }}"
+      },
+      "id": "750d461e-1d44-52ac-a580-690a2632f30c",
+      "name": "Add label ReviewedByAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3660,
+        60
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GITHUB_CRED_ID",
+          "name": "GitHub account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "GitHub Trigger": {
+      "main": [
+        [
+          {
+            "node": "Route event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route event": {
+      "main": [
+        [
+          {
+            "node": "Mode: primary (PR opened)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mode: primary (/make_ai_review)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mode: other model (/make_other_ai_review)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignore other events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mode: primary (PR opened)": {
+      "main": [
+        [
+          {
+            "node": "Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mode: primary (/make_ai_review)": {
+      "main": [
+        [
+          {
+            "node": "Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mode: other model (/make_other_ai_review)": {
+      "main": [
+        [
+          {
+            "node": "Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Context": {
+      "main": [
+        [
+          {
+            "node": "Primary model? (dedup only for it)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Primary model? (dedup only for it)": {
+      "main": [
+        [
+          {
+            "node": "Data Table: already reviewed?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Table: already reviewed?": {
+      "main": [
+        [
+          {
+            "node": "PR already in table?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PR already in table?": {
+      "main": [
+        [
+          {
+            "node": "Comment: review skipped (duplicate)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get PR": {
+      "main": [
+        [
+          {
+            "node": "Get PR files (patches)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get PR files (patches)": {
+      "main": [
+        [
+          {
+            "node": "Split diff into hunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split diff into hunks": {
+      "main": [
+        [
+          {
+            "node": "Which model?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model: kimi-k2.6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Review · primary model",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model: kimi-k2.5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Review · other model",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Which model?": {
+      "main": [
+        [
+          {
+            "node": "Review · primary model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Review · other model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review · primary model": {
+      "main": [
+        [
+          {
+            "node": "Build inline review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review · other model": {
+      "main": [
+        [
+          {
+            "node": "Build inline review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build inline review": {
+      "main": [
+        [
+          {
+            "node": "Post review with inline comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post review with inline comments": {
+      "main": [
+        [
+          {
+            "node": "Data Table: save reviewed PR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback: single PR comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fallback: single PR comment": {
+      "main": [
+        [
+          {
+            "node": "Data Table: save reviewed PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Table: save reviewed PR": {
+      "main": [
+        [
+          {
+            "node": "Add label ReviewedByAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Moscow",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [],
+  "id": "p7CodeReview0001"
+}

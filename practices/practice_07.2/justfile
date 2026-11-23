@@ -1,0 +1,5 @@
+start:
+    python3 tools/site-n8n.py 7.2 start
+
+test:
+    python3 tools/site-n8n.py 7.2 test
